@@ -6,259 +6,207 @@ export default function HomePage() {
   const latest = SAMPLE_DEALS.slice(0, 8)
 
   return (
-    <main className="min-h-screen">
+    <div style={{minHeight:'100vh',background:'#F5F2ED',fontFamily:'Inter,system-ui,sans-serif'}}>
+
       {/* NAVBAR */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-canvas-100/95 backdrop-blur-md border-b border-canvas-300/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="font-display text-2xl font-semibold text-forest">
-            Valör
+      <nav style={{position:'fixed',top:0,left:0,right:0,zIndex:100,background:'rgba(245,242,237,0.95)',backdropFilter:'blur(12px)',borderBottom:'1px solid rgba(196,151,74,0.15)',boxShadow:'0 1px 20px rgba(26,58,42,0.06)'}}>
+        <div style={{maxWidth:'1200px',margin:'0 auto',padding:'0 24px',height:'72px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <Link href="/" style={{textDecoration:'none',display:'flex',alignItems:'center',gap:'10px'}}>
+            <div style={{width:'36px',height:'36px',background:'linear-gradient(135deg,#1A3A2A,#2D5A3D)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(26,58,42,0.3)'}}>
+              <span style={{color:'#C4974A',fontSize:'16px',fontWeight:'700',fontFamily:'Georgia,serif'}}>V</span>
+            </div>
+            <span style={{fontSize:'22px',fontWeight:'700',color:'#1A3A2A',fontFamily:'Georgia,serif',letterSpacing:'-0.5px'}}>Valör</span>
           </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/deals" className="nav-link">Utforska</Link>
-            <Link href="/deals?kategori=spa" className="nav-link">Spa</Link>
-            <Link href="/deals?kategori=restauranger" className="nav-link">Restauranger</Link>
+          <div style={{display:'flex',alignItems:'center',gap:'32px'}}>
+            <Link href="/deals" style={{textDecoration:'none',color:'#4A5568',fontSize:'14px',fontWeight:'500',transition:'color 0.2s'}}>Utforska</Link>
+            <Link href="/deals?kategori=spa" style={{textDecoration:'none',color:'#4A5568',fontSize:'14px',fontWeight:'500'}}>Spa</Link>
+            <Link href="/deals?kategori=restauranger" style={{textDecoration:'none',color:'#4A5568',fontSize:'14px',fontWeight:'500'}}>Restauranger</Link>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/logga-in" className="btn-secondary text-sm py-2 px-4 rounded-lg hidden sm:inline-flex">
-              Logga in
-            </Link>
-            <Link href="/registrera" className="btn-primary text-sm py-2 px-4 rounded-lg">
-              Kom igång
-            </Link>
+          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+            <Link href="/logga-in" style={{textDecoration:'none',color:'#1A3A2A',fontSize:'14px',fontWeight:'500',padding:'8px 18px',border:'1.5px solid rgba(26,58,42,0.25)',borderRadius:'10px',transition:'all 0.2s'}}>Logga in</Link>
+            <Link href="/registrera" style={{textDecoration:'none',color:'#fff',fontSize:'14px',fontWeight:'600',padding:'9px 20px',background:'linear-gradient(135deg,#1A3A2A,#2D5A3D)',borderRadius:'10px',boxShadow:'0 4px 14px rgba(26,58,42,0.3)'}}>Kom igång</Link>
           </div>
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-forest-900 via-forest-800 to-forest-700" />
-        <div className="absolute inset-0 opacity-10"
-          style={{backgroundImage:'radial-gradient(circle at 30% 50%, #C4974A 0%, transparent 60%), radial-gradient(circle at 70% 20%, #1A3A2A 0%, transparent 50%)'}} />
-        <div className="relative text-center px-4 max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white/80 text-xs font-medium px-4 py-2 rounded-full mb-8 border border-white/20">
-            <span className="w-2 h-2 bg-gold rounded-full animate-pulse" />
-            Premium deals i Göteborg
+      <section style={{position:'relative',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',paddingTop:'72px'}}>
+        <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#0D2418 0%,#1A3A2A 45%,#0F2D1E 100%)'}} />
+        <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(ellipse at 20% 50%,rgba(196,151,74,0.15) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(45,90,61,0.4) 0%,transparent 50%),radial-gradient(ellipse at 50% 100%,rgba(196,151,74,0.08) 0%,transparent 40%)'}} />
+        <div style={{position:'absolute',top:'15%',left:'8%',width:'300px',height:'300px',background:'rgba(196,151,74,0.06)',borderRadius:'50%',filter:'blur(60px)'}} />
+        <div style={{position:'absolute',bottom:'20%',right:'10%',width:'250px',height:'250px',background:'rgba(45,90,61,0.15)',borderRadius:'50%',filter:'blur(80px)'}} />
+        <div style={{position:'relative',textAlign:'center',padding:'0 24px',maxWidth:'800px',margin:'0 auto'}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:'8px',background:'rgba(196,151,74,0.12)',border:'1px solid rgba(196,151,74,0.3)',borderRadius:'50px',padding:'6px 16px',marginBottom:'32px'}}>
+            <div style={{width:'6px',height:'6px',background:'#C4974A',borderRadius:'50%',animation:'pulse 2s infinite'}} />
+            <span style={{color:'rgba(196,151,74,0.9)',fontSize:'12px',fontWeight:'600',letterSpacing:'1px',textTransform:'uppercase'}}>Premium deals · Göteborg</span>
           </div>
-          <h1 className="font-display text-5xl sm:text-6xl md:text-7xl font-bold text-white leading-tight tracking-tight mb-6">
-            Upplev mer.<br />
-            <span className="text-gold">Betala mindre.</span>
+          <h1 style={{fontSize:'clamp(48px,7vw,88px)',fontWeight:'800',color:'#fff',lineHeight:'1.05',letterSpacing:'-2px',marginBottom:'24px',fontFamily:'Georgia,serif'}}>
+            Upplev mer.<br/>
+            <span style={{background:'linear-gradient(135deg,#C4974A,#E8C97A,#C4974A)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Betala mindre.</span>
           </h1>
-          <p className="text-white/70 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
-            Kurerade premium deals på spa, restauranger och upplevelser i din stad.
+          <p style={{color:'rgba(255,255,255,0.65)',fontSize:'18px',lineHeight:'1.7',marginBottom:'48px',maxWidth:'520px',margin:'0 auto 48px'}}>
+            Kurerade premium deals på spa, restauranger och upplevelser. Bara det bästa, till halva priset.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/deals" className="btn-gold text-base px-8 py-4 rounded-xl inline-flex items-center gap-2">
+          <div style={{display:'flex',gap:'16px',justifyContent:'center',flexWrap:'wrap'}}>
+            <Link href="/deals" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:'8px',background:'linear-gradient(135deg,#C4974A,#D4AA5A)',color:'#1A2E1A',fontSize:'16px',fontWeight:'700',padding:'16px 36px',borderRadius:'14px',boxShadow:'0 8px 30px rgba(196,151,74,0.4)',letterSpacing:'-0.3px'}}>
               Utforska deals
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </Link>
-            <Link href="/for-foretag" className="bg-white/10 backdrop-blur-sm text-white border border-white/30 text-base px-8 py-4 rounded-xl hover:bg-white/20 transition-all duration-200">
+            <Link href="/for-foretag" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:'8px',background:'rgba(255,255,255,0.08)',border:'1.5px solid rgba(255,255,255,0.2)',color:'rgba(255,255,255,0.85)',fontSize:'16px',fontWeight:'500',padding:'16px 36px',borderRadius:'14px'}}>
               För företag
             </Link>
           </div>
-        </div>
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/40 animate-bounce">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </section>
-
-      {/* CATEGORIES */}
-      <section className="bg-white border-b border-canvas-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            <Link href="/deals" className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-forest text-white rounded-full text-sm font-medium">
-              Alla deals
-            </Link>
-            {CATEGORIES.map(cat => (
-              <Link key={cat.slug} href={`/deals?kategori=${cat.slug}`}
-                className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-canvas-100 hover:bg-canvas-200 text-canvas-700 rounded-full text-sm font-medium transition-colors duration-200 border border-canvas-300">
-                <span>{cat.emoji}</span>
-                <span>{cat.label}</span>
-              </Link>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'40px',marginTop:'64px',paddingTop:'40px',borderTop:'1px solid rgba(255,255,255,0.08)'}}>
+            {[['2 400+','Nöjda kunder'],['180+','Premium deals'],['4.9★','Betyg'],['48 tim','Support']].map(([n,l]) => (
+              <div key={l} style={{textAlign:'center'}}>
+                <div style={{fontSize:'24px',fontWeight:'800',color:'#C4974A',fontFamily:'Georgia,serif'}}>{n}</div>
+                <div style={{fontSize:'11px',color:'rgba(255,255,255,0.45)',marginTop:'2px',letterSpacing:'0.5px',textTransform:'uppercase'}}>{l}</div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FEATURED DEALS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <p className="text-xs font-semibold tracking-widest uppercase text-gold mb-2">Utvalda</p>
-            <h2 className="section-title">Veckans bästa deals</h2>
-          </div>
-          <Link href="/deals" className="hidden sm:flex items-center gap-1 text-sm font-medium text-forest hover:text-forest-700 transition-colors">
-            Se alla
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+      {/* CATEGORIES BAR */}
+      <section style={{background:'#fff',borderBottom:'1px solid rgba(196,151,74,0.12)',boxShadow:'0 4px 20px rgba(26,58,42,0.04)'}}>
+        <div style={{maxWidth:'1200px',margin:'0 auto',padding:'20px 24px',display:'flex',gap:'10px',overflowX:'auto'}}>
+          <Link href="/deals" style={{textDecoration:'none',flexShrink:0,display:'inline-flex',alignItems:'center',gap:'6px',background:'linear-gradient(135deg,#1A3A2A,#2D5A3D)',color:'#fff',fontSize:'13px',fontWeight:'600',padding:'9px 18px',borderRadius:'50px'}}>
+            ✦ Alla deals
           </Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featured.map(deal => (
-            <DealCardInline key={deal.id} deal={deal} />
+          {CATEGORIES.map(cat => (
+            <Link key={cat.slug} href={`/deals?kategori=${cat.slug}`}
+              style={{textDecoration:'none',flexShrink:0,display:'inline-flex',alignItems:'center',gap:'6px',background:'#F5F2ED',color:'#4A5568',fontSize:'13px',fontWeight:'500',padding:'9px 18px',borderRadius:'50px',border:'1.5px solid rgba(196,151,74,0.15)'}}>
+              <span>{cat.emoji}</span>
+              <span>{cat.label}</span>
+            </Link>
           ))}
         </div>
       </section>
 
-      {/* LATEST DEALS */}
-      <section className="bg-canvas-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-end justify-between mb-8">
-            <h2 className="section-title">Senaste deals</h2>
-            <Link href="/deals" className="hidden sm:flex items-center gap-1 text-sm font-medium text-forest hover:text-forest-700 transition-colors">
-              Se alla <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-            </Link>
+      {/* FEATURED DEALS */}
+      <section style={{maxWidth:'1200px',margin:'0 auto',padding:'80px 24px 40px'}}>
+        <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',marginBottom:'40px'}}>
+          <div>
+            <p style={{fontSize:'11px',fontWeight:'700',letterSpacing:'2px',textTransform:'uppercase',color:'#C4974A',marginBottom:'8px'}}>✦ Utvalda</p>
+            <h2 style={{fontSize:'36px',fontWeight:'800',color:'#1A3A2A',fontFamily:'Georgia,serif',letterSpacing:'-1px'}}>Veckans bästa deals</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {latest.map(deal => (
-              <DealCardInline key={deal.id} deal={deal} />
+          <Link href="/deals" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:'6px',color:'#1A3A2A',fontSize:'14px',fontWeight:'600',padding:'10px 20px',border:'1.5px solid rgba(26,58,42,0.2)',borderRadius:'10px'}}>
+            Se alla <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </Link>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:'24px'}}>
+          {featured.map(deal => <DealCard key={deal.id} deal={deal} />)}
+        </div>
+      </section>
+
+      {/* LATEST DEALS */}
+      <section style={{background:'linear-gradient(180deg,#F5F2ED 0%,#EDE8E0 100%)',padding:'60px 0 80px'}}>
+        <div style={{maxWidth:'1200px',margin:'0 auto',padding:'0 24px'}}>
+          <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',marginBottom:'40px'}}>
+            <h2 style={{fontSize:'36px',fontWeight:'800',color:'#1A3A2A',fontFamily:'Georgia,serif',letterSpacing:'-1px'}}>Senaste deals</h2>
+            <Link href="/deals" style={{textDecoration:'none',color:'#C4974A',fontSize:'14px',fontWeight:'600'}}>Se alla →</Link>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:'24px'}}>
+            {latest.map(deal => <DealCard key={deal.id} deal={deal} />)}
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section style={{background:'#fff',padding:'80px 24px'}}>
+        <div style={{maxWidth:'1100px',margin:'0 auto',textAlign:'center'}}>
+          <p style={{fontSize:'11px',fontWeight:'700',letterSpacing:'2px',textTransform:'uppercase',color:'#C4974A',marginBottom:'12px'}}>✦ Hur det fungerar</p>
+          <h2 style={{fontSize:'36px',fontWeight:'800',color:'#1A3A2A',fontFamily:'Georgia,serif',letterSpacing:'-1px',marginBottom:'56px'}}>Tre enkla steg</h2>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'40px'}}>
+            {[
+              {n:'01',title:'Utforska deals',desc:'Bläddra bland kurerade premium-erbjudanden på spa, restauranger och upplevelser i din stad.'},
+              {n:'02',title:'Köp säkert',desc:'Säker betalning. Du får en digital voucher direkt i mobilen — redo att användas.'},
+              {n:'03',title:'Njut & upplev',desc:'Visa din voucher hos partnern och njut av en upplevelse du aldrig glömmer.'},
+            ].map(s => (
+              <div key={s.n} style={{textAlign:'center',padding:'40px 28px',background:'#F5F2ED',borderRadius:'20px',border:'1px solid rgba(196,151,74,0.12)'}}>
+                <div style={{width:'56px',height:'56px',background:'linear-gradient(135deg,#1A3A2A,#2D5A3D)',borderRadius:'16px',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',boxShadow:'0 8px 24px rgba(26,58,42,0.2)'}}>
+                  <span style={{color:'#C4974A',fontSize:'18px',fontWeight:'800',fontFamily:'Georgia,serif'}}>{s.n}</span>
+                </div>
+                <h3 style={{fontSize:'18px',fontWeight:'700',color:'#1A3A2A',marginBottom:'10px'}}>{s.title}</h3>
+                <p style={{fontSize:'14px',color:'#6B7280',lineHeight:'1.6'}}>{s.desc}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* MEMBERSHIP CTA */}
-      <section className="bg-forest py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <span className="text-gold text-sm font-semibold tracking-widest uppercase">Premium Member</span>
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-white mt-3 mb-4">
-            Bli member. Upplev mer.
-          </h2>
-          <p className="text-white/70 text-lg mb-8 max-w-xl mx-auto">
-            Tidig tillgång till exklusiva deals, members-only erbjudanden och personliga rekommendationer.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-            <div className="flex items-center gap-2 text-white/80 text-sm">
-              <span className="w-1.5 h-1.5 bg-gold rounded-full" /> Tidig tillgång till deals
-            </div>
-            <div className="flex items-center gap-2 text-white/80 text-sm">
-              <span className="w-1.5 h-1.5 bg-gold rounded-full" /> Exklusiva members-priser
-            </div>
-            <div className="flex items-center gap-2 text-white/80 text-sm">
-              <span className="w-1.5 h-1.5 bg-gold rounded-full" /> Gratis under 30 dagar
-            </div>
-          </div>
-          <Link href="/registrera" className="btn-gold text-base px-10 py-4 rounded-xl inline-block">
-            Starta gratis — 199 kr/mån
+      {/* CTA BANNER */}
+      <section style={{background:'linear-gradient(135deg,#0D2418 0%,#1A3A2A 100%)',padding:'80px 24px',textAlign:'center',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:'-50px',left:'-50px',width:'300px',height:'300px',background:'rgba(196,151,74,0.06)',borderRadius:'50%',filter:'blur(60px)'}} />
+        <div style={{position:'absolute',bottom:'-50px',right:'-50px',width:'300px',height:'300px',background:'rgba(45,90,61,0.15)',borderRadius:'50%',filter:'blur(60px)'}} />
+        <div style={{position:'relative',maxWidth:'600px',margin:'0 auto'}}>
+          <h2 style={{fontSize:'40px',fontWeight:'800',color:'#fff',fontFamily:'Georgia,serif',letterSpacing:'-1px',marginBottom:'16px'}}>Redo att uppleva mer?</h2>
+          <p style={{color:'rgba(255,255,255,0.6)',fontSize:'16px',marginBottom:'36px'}}>Gå med tusentals nöjda kunder och hitta din nästa upplevelse idag.</p>
+          <Link href="/deals" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:'8px',background:'linear-gradient(135deg,#C4974A,#D4AA5A)',color:'#1A2E1A',fontSize:'16px',fontWeight:'700',padding:'16px 40px',borderRadius:'14px',boxShadow:'0 8px 30px rgba(196,151,74,0.4)'}}>
+            Utforska alla deals →
           </Link>
         </div>
       </section>
 
-      {/* TRUST BAR */}
-      <section className="bg-white border-t border-canvas-200 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-canvas-500">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              Säker betalning
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-              Klarna & Swish
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              30 dagars ångerrätt
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              4 900+ nöjda kunder
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* FOOTER */}
-      <footer className="bg-canvas-900 text-canvas-400 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="font-display text-white text-lg mb-4">Valör</h3>
-              <p className="text-sm leading-relaxed">Premium deals i din stad. Kurerade erbjudanden för den kräsne.</p>
+      <footer style={{background:'#0D1F14',padding:'60px 24px 32px'}}>
+        <div style={{maxWidth:'1200px',margin:'0 auto'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingBottom:'32px',borderBottom:'1px solid rgba(255,255,255,0.08)',marginBottom:'32px',flexWrap:'wrap',gap:'20px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+              <div style={{width:'36px',height:'36px',background:'linear-gradient(135deg,#1A3A2A,#2D5A3D)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <span style={{color:'#C4974A',fontSize:'16px',fontWeight:'700',fontFamily:'Georgia,serif'}}>V</span>
+              </div>
+              <span style={{fontSize:'20px',fontWeight:'700',color:'#fff',fontFamily:'Georgia,serif'}}>Valör</span>
             </div>
-            <div>
-              <h4 className="text-white text-sm font-semibold mb-4 tracking-wide">Kategorier</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/deals?kategori=spa" className="hover:text-white transition-colors">Spa & Wellness</Link></li>
-                <li><Link href="/deals?kategori=restauranger" className="hover:text-white transition-colors">Restauranger</Link></li>
-                <li><Link href="/deals?kategori=fitness" className="hover:text-white transition-colors">Fitness</Link></li>
-                <li><Link href="/deals?kategori=hotell" className="hover:text-white transition-colors">Hotell</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white text-sm font-semibold mb-4 tracking-wide">Konto</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/logga-in" className="hover:text-white transition-colors">Logga in</Link></li>
-                <li><Link href="/registrera" className="hover:text-white transition-colors">Registrera</Link></li>
-                <li><Link href="/konto" className="hover:text-white transition-colors">Mina deals</Link></li>
-                <li><Link href="/for-foretag" className="hover:text-white transition-colors">För företag</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white text-sm font-semibold mb-4 tracking-wide">Info</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/om-oss" className="hover:text-white transition-colors">Om oss</Link></li>
-                <li><Link href="/kontakt" className="hover:text-white transition-colors">Kontakt</Link></li>
-                <li><Link href="/villkor" className="hover:text-white transition-colors">Villkor</Link></li>
-                <li><Link href="/integritetspolicy" className="hover:text-white transition-colors">Integritetspolicy</Link></li>
-              </ul>
+            <div style={{display:'flex',gap:'32px'}}>
+              {['Om oss','Kontakt','För företag','Integritetspolicy'].map(l => (
+                <Link key={l} href="/" style={{textDecoration:'none',color:'rgba(255,255,255,0.4)',fontSize:'13px'}}>{l}</Link>
+              ))}
             </div>
           </div>
-          <div className="border-t border-canvas-700 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-sm">© 2026 Valör Sverige AB. Alla rättigheter förbehållna.</p>
-            <p className="text-sm">Göteborg, Sverige 🇸🇪</p>
+          <div style={{textAlign:'center',color:'rgba(255,255,255,0.25)',fontSize:'12px'}}>
+            © 2025 Valör. Alla rättigheter förbehållna. · Premium deals i Sverige 🇸🇪
           </div>
         </div>
       </footer>
-    </main>
+    </div>
   )
 }
 
-function DealCardInline({ deal }: { deal: any }) {
-  const discount = Math.round((1 - deal.dealPrice / deal.originalPrice) * 100)
-  const remaining = deal.maxQty - deal.soldCount
-
+function DealCard({ deal }: { deal: any }) {
+  const discount = Math.round((1 - deal.price / deal.originalPrice) * 100)
   return (
-    <Link href={`/deals/${deal.slug}`} className="group block">
-      <div className="card">
-        <div className="relative aspect-[4/3] bg-canvas-200 overflow-hidden">
-          <div className="w-full h-full bg-gradient-to-br from-forest-200 to-forest-400 flex items-center justify-center">
-            <span className="text-4xl opacity-60">{deal.categoryEmoji}</span>
-          </div>
-          <div className="absolute top-3 left-3 flex gap-2">
-            <span className="badge-discount">-{discount}%</span>
-            {deal.featured && <span className="badge-gold">✦</span>}
-          </div>
-          <div className="absolute inset-0 bg-forest/0 group-hover:bg-forest/10 transition-colors duration-300" />
+    <Link href={`/deals/${deal.slug}`} style={{textDecoration:'none',display:'block',background:'#fff',borderRadius:'20px',overflow:'hidden',boxShadow:'0 4px 20px rgba(26,58,42,0.07)',border:'1px solid rgba(196,151,74,0.1)',transition:'all 0.3s',cursor:'pointer'}}>
+      <div style={{position:'relative',height:'200px',background:'linear-gradient(135deg,#1A3A2A,#2D5A3D)',overflow:'hidden'}}>
+        <div style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(circle at 70% 30%,rgba(196,151,74,0.2),transparent 60%)'}} />
+        <div style={{position:'absolute',top:'14px',left:'14px',background:'linear-gradient(135deg,#1A3A2A,#2D5A3D)',color:'#C4974A',fontSize:'11px',fontWeight:'700',padding:'5px 10px',borderRadius:'50px',border:'1px solid rgba(196,151,74,0.3)',letterSpacing:'0.5px'}}>
+          -{discount}%
         </div>
-        <div className="p-4 space-y-2">
-          <p className="text-xs font-semibold tracking-widest uppercase text-canvas-500">{deal.merchantName}</p>
-          <h3 className="font-display text-lg text-canvas-800 group-hover:text-forest transition-colors leading-tight line-clamp-2">
-            {deal.title}
-          </h3>
-          <p className="text-xs text-canvas-500">{deal.city} · {deal.category}</p>
-          <div className="border-t border-canvas-200 pt-3 flex items-center justify-between">
-            <div className="flex items-baseline gap-2">
-              <span className="price-tag">{deal.dealPrice} kr</span>
-              <span className="text-sm text-canvas-400 line-through">{deal.originalPrice} kr</span>
-            </div>
-            {remaining < 15 && (
-              <span className="text-xs text-red-500 font-medium">{remaining} kvar</span>
-            )}
+        {deal.featured && (
+          <div style={{position:'absolute',top:'14px',right:'14px',background:'rgba(196,151,74,0.15)',color:'#C4974A',fontSize:'10px',fontWeight:'700',padding:'5px 10px',borderRadius:'50px',border:'1px solid rgba(196,151,74,0.3)',backdropFilter:'blur(8px)'}}>
+            ✦ UTVALT
           </div>
+        )}
+        <div style={{position:'absolute',bottom:'14px',left:'14px',right:'14px'}}>
+          <span style={{background:'rgba(245,242,237,0.12)',color:'rgba(255,255,255,0.7)',fontSize:'11px',fontWeight:'500',padding:'4px 10px',borderRadius:'50px',backdropFilter:'blur(8px)'}}>
+            {deal.category}
+          </span>
+        </div>
+      </div>
+      <div style={{padding:'20px'}}>
+        <p style={{fontSize:'11px',fontWeight:'600',color:'#C4974A',marginBottom:'4px',letterSpacing:'0.5px',textTransform:'uppercase'}}>{deal.merchant}</p>
+        <h3 style={{fontSize:'16px',fontWeight:'700',color:'#1A3A2A',lineHeight:'1.3',marginBottom:'12px'}}>{deal.title}</h3>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
+          <div>
+            <span style={{fontSize:'24px',fontWeight:'800',color:'#1A3A2A',fontFamily:'Georgia,serif'}}>{deal.price.toLocaleString('sv-SE')} kr</span>
+            <span style={{fontSize:'13px',color:'#9CA3AF',textDecoration:'line-through',marginLeft:'8px'}}>{deal.originalPrice.toLocaleString('sv-SE')} kr</span>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <span style={{fontSize:'12px',color:'#6B7280'}}>★ {deal.rating} · {deal.location}</span>
+          {deal.spotsLeft && deal.spotsLeft < 20 && (
+            <span style={{fontSize:'11px',color:'#DC6B3A',fontWeight:'600'}}>{deal.spotsLeft} kvar</span>
+          )}
         </div>
       </div>
     </Link>
