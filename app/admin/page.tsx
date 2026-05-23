@@ -103,7 +103,7 @@ export default function AdminDashboard() {
         return (
                 <span style={{ background: s.bg, color: s.color, padding: '2px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' as const }}>
                   {s.label}
-                </span>span>
+                </span>
               )
   }
 
@@ -112,26 +112,26 @@ export default function AdminDashboard() {
           {/* Top navbar */}
                 <nav style={{ background: C.forestDark, padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60, position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 2px 12px rgba(0,0,0,0.3)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                      <span style={{ fontFamily: 'Georgia, serif', fontSize: 22, fontWeight: 700, color: C.gold, letterSpacing: 1 }}>VALÖR</span>span>
-                                      <span style={{ background: C.red, color: C.white, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, letterSpacing: 0.5 }}>ADMIN</span>span>
-                          </div>div>
+                                      <span style={{ fontFamily: 'Georgia, serif', fontSize: 22, fontWeight: 700, color: C.gold, letterSpacing: 1 }}>VALÖR</span>
+                                      <span style={{ background: C.red, color: C.white, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, letterSpacing: 0.5 }}>ADMIN</span>
+                          </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                             {pendingDeals.length > 0 && (
                       <span style={{ background: C.orange, color: C.white, fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 20 }}>
                                       ⚠️ {pendingDeals.length} deal{pendingDeals.length > 1 ? 's' : ''} väntar godkännande
-                      </span>span>
+                      </span>
                     )}
                                       <Link href="/" style={{ color: C.gold, textDecoration: 'none', fontSize: 13, fontWeight: 500 }}>← Tillbaka till sajten</Link>Link>
-                                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.forest, border: `2px solid ${C.gold}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.gold, fontSize: 14, fontWeight: 700 }}>N</div>div>
-                          </div>div>
-                </nav>nav>
+                                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.forest, border: `2px solid ${C.gold}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.gold, fontSize: 14, fontWeight: 700 }}>N</div>
+                          </div>
+                </nav>
 
                 <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 20px' }}>
                   {/* Page header */}
                           <div style={{ marginBottom: 28 }}>
                                       <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, fontWeight: 700, color: C.forestDark, margin: 0 }}>Plattformsöversikt</h1>h1>
                                       <p style={{ color: C.gray, fontSize: 14, margin: '6px 0 0' }}>Admin • noa · Fredag 23 maj 2026</p>p>
-                          </div>div>
+                          </div>
 
                   {/* Tabs */}
                           <div style={{ display: 'flex', gap: 4, marginBottom: 28, background: C.white, borderRadius: 12, padding: 4, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflowX: 'auto' as const }}>
@@ -143,9 +143,9 @@ export default function AdminDashboard() {
                                       transition: 'all 0.2s',
                       }}>
                         {tab.icon} {tab.label}
-                      </button>button>
+                      </button>
                     ))}
-                          </div>div>
+                          </div>
 
                   {/* OVERVIEW TAB */}
                   {activeTab === 'overview' && (
@@ -155,51 +155,51 @@ export default function AdminDashboard() {
                                   {STATS.map(stat => (
                                       <div key={stat.label} style={{ background: C.white, borderRadius: 16, padding: '20px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: `1px solid ${C.ivoryDark}`, transition: 'transform 0.2s' }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                                                                            <span style={{ fontSize: 28 }}>{stat.icon}</span>span>
-                                                                            <span style={{ background: stat.positive ? '#D1FAE5' : '#FEE2E2', color: stat.positive ? C.green : C.red, fontSize: 12, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>{stat.change}</span>span>
-                                                        </div>div>
-                                                        <div style={{ fontSize: 24, fontWeight: 800, color: C.forestDark, fontFamily: 'Georgia, serif', marginBottom: 4 }}>{stat.value}</div>div>
-                                                        <div style={{ fontSize: 13, fontWeight: 600, color: C.gray, marginBottom: 2 }}>{stat.label}</div>div>
-                                                        <div style={{ fontSize: 11, color: '#9CA3AF' }}>{stat.sub}</div>div>
-                                      </div>div>
+                                                                            <span style={{ fontSize: 28 }}>{stat.icon}</span>
+                                                                            <span style={{ background: stat.positive ? '#D1FAE5' : '#FEE2E2', color: stat.positive ? C.green : C.red, fontSize: 12, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>{stat.change}</span>
+                                                        </div>
+                                                        <div style={{ fontSize: 24, fontWeight: 800, color: C.forestDark, fontFamily: 'Georgia, serif', marginBottom: 4 }}>{stat.value}</div>
+                                                        <div style={{ fontSize: 13, fontWeight: 600, color: C.gray, marginBottom: 2 }}>{stat.label}</div>
+                                                        <div style={{ fontSize: 11, color: '#9CA3AF' }}>{stat.sub}</div>
+                                      </div>
                                     ))}
-                                </div>div>
+                                </div>
                     
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
                                   {/* Pending deals */}
                                               <div style={{ background: C.white, borderRadius: 16, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: `1px solid ${C.ivoryDark}` }}>
                                                               <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 18, color: C.forestDark, margin: '0 0 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
                                                                                 Deals för godkännande
-                                                                {pendingDeals.length > 0 && <span style={{ background: C.orange, color: C.white, fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{pendingDeals.length}</span>span>}
+                                                                {pendingDeals.length > 0 && <span style={{ background: C.orange, color: C.white, fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{pendingDeals.length}</span>}
                                                               </h2>h2>
                                                 {pendingDeals.length === 0 ? (
                                         <div style={{ textAlign: 'center' as const, padding: '40px 20px', color: C.gray }}>
-                                                            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>div>
+                                                            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
                                                             <p style={{ margin: 0 }}>Alla deals är godkända!</p>p>
-                                        </div>div>
+                                        </div>
                                       ) : (
                                         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
                                           {pendingDeals.map(deal => (
                                                                 <div key={deal.id} style={{ border: `1px solid ${C.ivoryDark}`, borderRadius: 12, padding: 16, background: C.grayLight }}>
                                                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                                                                                                                   <div>
-                                                                                                                                              <div style={{ fontWeight: 700, color: C.forestDark, fontSize: 15, marginBottom: 4 }}>{deal.title}</div>div>
-                                                                                                                                              <div style={{ fontSize: 13, color: C.gray }}>{deal.merchant} · {deal.city}</div>div>
-                                                                                                                    </div>div>
+                                                                                                                                              <div style={{ fontWeight: 700, color: C.forestDark, fontSize: 15, marginBottom: 4 }}>{deal.title}</div>
+                                                                                                                                              <div style={{ fontSize: 13, color: C.gray }}>{deal.merchant} · {deal.city}</div>
+                                                                                                                    </div>
                                                                                                                   <div style={{ textAlign: 'right' as const }}>
-                                                                                                                                              <div style={{ fontWeight: 800, color: C.forest, fontSize: 16 }}>{(deal.price || 0).toLocaleString('sv-SE')} kr</div>div>
-                                                                                                                                              <div style={{ fontSize: 12, color: C.gray, textDecoration: 'line-through' }}>{(deal.original || 0).toLocaleString('sv-SE')} kr</div>div>
-                                                                                                                    </div>div>
-                                                                                          </div>div>
+                                                                                                                                              <div style={{ fontWeight: 800, color: C.forest, fontSize: 16 }}>{(deal.price || 0).toLocaleString('sv-SE')} kr</div>
+                                                                                                                                              <div style={{ fontSize: 12, color: C.gray, textDecoration: 'line-through' }}>{(deal.original || 0).toLocaleString('sv-SE')} kr</div>
+                                                                                                                    </div>
+                                                                                          </div>
                                                                                         <div style={{ display: 'flex', gap: 8 }}>
-                                                                                                                  <button onClick={() => approveDeal(deal.id)} style={{ flex: 1, padding: '8px 16px', background: C.forest, color: C.white, border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>✓ Godkänn</button>button>
-                                                                                                                  <button onClick={() => rejectDeal(deal.id)} style={{ flex: 1, padding: '8px 16px', background: '#FEE2E2', color: C.red, border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>✕ Avvisa</button>button>
-                                                                                          </div>div>
-                                                                </div>div>
+                                                                                                                  <button onClick={() => approveDeal(deal.id)} style={{ flex: 1, padding: '8px 16px', background: C.forest, color: C.white, border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>✓ Godkänn</button>
+                                                                                                                  <button onClick={() => rejectDeal(deal.id)} style={{ flex: 1, padding: '8px 16px', background: '#FEE2E2', color: C.red, border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>✕ Avvisa</button>
+                                                                                          </div>
+                                                                </div>
                                                               ))}
-                                        </div>div>
+                                        </div>
                                                               )}
-                                              </div>div>
+                                              </div>
                                 
                                   {/* Activity feed */}
                                               <div style={{ background: C.white, borderRadius: 16, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: `1px solid ${C.ivoryDark}` }}>
@@ -207,18 +207,18 @@ export default function AdminDashboard() {
                                                               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
                                                                 {ACTIVITY.map((a, i) => (
                                           <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, marginTop: 6, flexShrink: 0 }}></div>div>
+                                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, marginTop: 6, flexShrink: 0 }}></div>
                                                                 <div style={{ flex: 1 }}>
-                                                                                        <div style={{ fontSize: 13, fontWeight: 600, color: C.forestDark }}>{a.text}</div>div>
-                                                                                        <div style={{ fontSize: 12, color: C.gray }}>{a.detail}</div>div>
-                                                                </div>div>
-                                                                <div style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap' as const }}>{a.time}</div>div>
-                                          </div>div>
+                                                                                        <div style={{ fontSize: 13, fontWeight: 600, color: C.forestDark }}>{a.text}</div>
+                                                                                        <div style={{ fontSize: 12, color: C.gray }}>{a.detail}</div>
+                                                                </div>
+                                                                <div style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap' as const }}>{a.time}</div>
+                                          </div>
                                         ))}
-                                                              </div>div>
-                                              </div>div>
-                                </div>div>
-                    </div>div>
+                                                              </div>
+                                              </div>
+                                </div>
+                    </div>
                         )}
                 
                   {/* DEALS TAB */}
@@ -232,53 +232,53 @@ export default function AdminDashboard() {
                                                                 style={{ padding: '10px 16px', borderRadius: 10, border: `1px solid ${C.ivoryDark}`, fontSize: 14, width: 300, outline: 'none', background: C.white }}
                                                               />
                                               <div style={{ display: 'flex', gap: 8, fontSize: 13, color: C.gray }}>
-                                                              <span style={{ background: '#D1FAE5', color: C.green, padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>● {deals.filter(d => d.status === 'active').length} aktiva</span>span>
-                                                              <span style={{ background: '#FEF3C7', color: C.orange, padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>● {deals.filter(d => d.status === 'pending').length} väntar</span>span>
-                                              </div>div>
-                                </div>div>
+                                                              <span style={{ background: '#D1FAE5', color: C.green, padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>● {deals.filter(d => d.status === 'active').length} aktiva</span>
+                                                              <span style={{ background: '#FEF3C7', color: C.orange, padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>● {deals.filter(d => d.status === 'pending').length} väntar</span>
+                                              </div>
+                                </div>
                                 <div style={{ background: C.white, borderRadius: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: `1px solid ${C.ivoryDark}`, overflow: 'hidden' }}>
                                               <div style={{ overflowX: 'auto' as const }}>
                                                               <table style={{ width: '100%', borderCollapse: 'collapse' as const }}>
                                                                                 <thead>
                                                                                                     <tr style={{ background: C.grayLight, borderBottom: `2px solid ${C.ivoryDark}` }}>
                                                                                                       {['Deal', 'Merchant', 'Stad', 'Pris', 'Sålda', 'Utgår', 'Status', 'Åtgärd'].map(h => (
-                                              <th key={h} style={{ padding: '12px 16px', textAlign: 'left' as const, fontSize: 12, fontWeight: 700, color: C.gray, whiteSpace: 'nowrap' as const, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{h}</th>th>
+                                              <th key={h} style={{ padding: '12px 16px', textAlign: 'left' as const, fontSize: 12, fontWeight: 700, color: C.gray, whiteSpace: 'nowrap' as const, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{h}</th>
                                             ))}
-                                                                                                      </tr>tr>
-                                                                                </thead>thead>
+                                                                                                      </tr>
+                                                                                </thead>
                                                                                 <tbody>
                                                                                   {filteredDeals.map((deal, i) => (
                                             <tr key={deal.id} style={{ borderBottom: `1px solid ${C.ivoryDark}`, background: i % 2 === 0 ? C.white : C.grayLight }}>
                                                                     <td style={{ padding: '14px 16px' }}>
-                                                                                              <div style={{ fontWeight: 600, color: C.forestDark, fontSize: 14, maxWidth: 200 }}>{deal.title}</div>div>
-                                                                                              <div style={{ fontSize: 12, color: C.gray }}>{deal.category}</div>div>
-                                                                    </td>td>
-                                                                    <td style={{ padding: '14px 16px', fontSize: 13, color: C.gray, whiteSpace: 'nowrap' as const }}>{deal.merchant}</td>td>
-                                                                    <td style={{ padding: '14px 16px', fontSize: 13, color: C.gray }}>{deal.city}</td>td>
+                                                                                              <div style={{ fontWeight: 600, color: C.forestDark, fontSize: 14, maxWidth: 200 }}>{deal.title}</div>
+                                                                                              <div style={{ fontSize: 12, color: C.gray }}>{deal.category}</div>
+                                                                    </td>
+                                                                    <td style={{ padding: '14px 16px', fontSize: 13, color: C.gray, whiteSpace: 'nowrap' as const }}>{deal.merchant}</td>
+                                                                    <td style={{ padding: '14px 16px', fontSize: 13, color: C.gray }}>{deal.city}</td>
                                                                     <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' as const }}>
-                                                                                              <div style={{ fontWeight: 700, color: C.forest, fontSize: 14 }}>{(deal.price || 0).toLocaleString('sv-SE')} kr</div>div>
-                                                                                              <div style={{ fontSize: 11, color: C.gray, textDecoration: 'line-through' }}>{(deal.original || 0).toLocaleString('sv-SE')} kr</div>div>
-                                                                    </td>td>
-                                                                    <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 700, color: C.forestDark }}>{deal.sold}</td>td>
-                                                                    <td style={{ padding: '14px 16px', fontSize: 12, color: C.gray, whiteSpace: 'nowrap' as const }}>{deal.expires}</td>td>
-                                                                    <td style={{ padding: '14px 16px' }}>{statusBadge(deal.status)}</td>td>
+                                                                                              <div style={{ fontWeight: 700, color: C.forest, fontSize: 14 }}>{(deal.price || 0).toLocaleString('sv-SE')} kr</div>
+                                                                                              <div style={{ fontSize: 11, color: C.gray, textDecoration: 'line-through' }}>{(deal.original || 0).toLocaleString('sv-SE')} kr</div>
+                                                                    </td>
+                                                                    <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 700, color: C.forestDark }}>{deal.sold}</td>
+                                                                    <td style={{ padding: '14px 16px', fontSize: 12, color: C.gray, whiteSpace: 'nowrap' as const }}>{deal.expires}</td>
+                                                                    <td style={{ padding: '14px 16px' }}>{statusBadge(deal.status)}</td>
                                                                     <td style={{ padding: '14px 16px' }}>
                                                                       {deal.status === 'pending' ? (
                                                                           <div style={{ display: 'flex', gap: 6 }}>
-                                                                                                        <button onClick={() => approveDeal(deal.id)} style={{ padding: '5px 12px', background: C.forest, color: C.white, border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Godkänn</button>button>
-                                                                                                        <button onClick={() => rejectDeal(deal.id)} style={{ padding: '5px 12px', background: '#FEE2E2', color: C.red, border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Avvisa</button>button>
-                                                                            </div>div>
+                                                                                                        <button onClick={() => approveDeal(deal.id)} style={{ padding: '5px 12px', background: C.forest, color: C.white, border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Godkänn</button>
+                                                                                                        <button onClick={() => rejectDeal(deal.id)} style={{ padding: '5px 12px', background: '#FEE2E2', color: C.red, border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Avvisa</button>
+                                                                            </div>
                                                                         ) : (
-                                                                          <button style={{ padding: '5px 12px', background: C.ivoryDark, color: C.gray, border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>Redigera</button>button>
+                                                                          <button style={{ padding: '5px 12px', background: C.ivoryDark, color: C.gray, border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>Redigera</button>
                                                                                               )}
-                                                                    </td>td>
-                                            </tr>tr>
+                                                                    </td>
+                                            </tr>
                                           ))}
-                                                                                </tbody>tbody>
-                                                              </table>table>
-                                              </div>div>
-                                </div>div>
-                    </div>div>
+                                                                                </tbody>
+                                                              </table>
+                                              </div>
+                                </div>
+                    </div>
                         )}
                 
                   {/* MERCHANTS TAB */}
@@ -291,38 +291,38 @@ export default function AdminDashboard() {
                                                                 onChange={e => setSearchMerchants(e.target.value)}
                                                                 style={{ padding: '10px 16px', borderRadius: 10, border: `1px solid ${C.ivoryDark}`, fontSize: 14, width: 280, outline: 'none', background: C.white }}
                                                               />
-                                </div>div>
+                                </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
                                   {filteredMerchants.map(m => (
                                       <div key={m.id} style={{ background: C.white, borderRadius: 16, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: `1px solid ${C.ivoryDark}` }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                                                                             <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${C.forest}, ${C.forestMid})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.gold, fontSize: 20, fontWeight: 700 }}>
                                                                               {m.name.charAt(0)}
-                                                                            </div>div>
+                                                                            </div>
                                                           {statusBadge(m.status)}
-                                                        </div>div>
-                                                        <div style={{ fontWeight: 700, color: C.forestDark, fontSize: 16, marginBottom: 4 }}>{m.name}</div>div>
-                                                        <div style={{ fontSize: 13, color: C.gray, marginBottom: 16 }}>{m.city} · {m.category}</div>div>
+                                                        </div>
+                                                        <div style={{ fontWeight: 700, color: C.forestDark, fontSize: 16, marginBottom: 4 }}>{m.name}</div>
+                                                        <div style={{ fontSize: 13, color: C.gray, marginBottom: 16 }}>{m.city} · {m.category}</div>
                                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
                                                                             <div style={{ textAlign: 'center' as const, background: C.grayLight, borderRadius: 10, padding: '10px 8px' }}>
-                                                                                                  <div style={{ fontSize: 14, fontWeight: 800, color: C.forest }}>{m.deals}</div>div>
-                                                                                                  <div style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>DEALS</div>div>
-                                                                            </div>div>
+                                                                                                  <div style={{ fontSize: 14, fontWeight: 800, color: C.forest }}>{m.deals}</div>
+                                                                                                  <div style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>DEALS</div>
+                                                                            </div>
                                                                             <div style={{ textAlign: 'center' as const, background: C.grayLight, borderRadius: 10, padding: '10px 8px' }}>
-                                                                                                  <div style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>{m.rating}</div>div>
-                                                                                                  <div style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>BETYG</div>div>
-                                                                            </div>div>
+                                                                                                  <div style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>{m.rating}</div>
+                                                                                                  <div style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>BETYG</div>
+                                                                            </div>
                                                                             <div style={{ textAlign: 'center' as const, background: C.grayLight, borderRadius: 10, padding: '10px 8px' }}>
-                                                                                                  <div style={{ fontSize: 11, fontWeight: 800, color: C.forestDark }}>{m.revenue.split(' ')[0]}</div>div>
-                                                                                                  <div style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>INTÄKT</div>div>
-                                                                            </div>div>
-                                                        </div>div>
-                                                        <div style={{ fontSize: 11, color: C.gray, marginBottom: 14 }}>Ansluten: {m.joined}</div>div>
-                                                        <button style={{ width: '100%', padding: '9px', background: C.forestDark, color: C.white, border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Visa profil →</button>button>
-                                      </div>div>
+                                                                                                  <div style={{ fontSize: 11, fontWeight: 800, color: C.forestDark }}>{m.revenue.split(' ')[0]}</div>
+                                                                                                  <div style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>INTÄKT</div>
+                                                                            </div>
+                                                        </div>
+                                                        <div style={{ fontSize: 11, color: C.gray, marginBottom: 14 }}>Ansluten: {m.joined}</div>
+                                                        <button style={{ width: '100%', padding: '9px', background: C.forestDark, color: C.white, border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Visa profil →</button>
+                                      </div>
                                     ))}
-                                </div>div>
-                    </div>div>
+                                </div>
+                    </div>
                         )}
                 
                   {/* ORDERS TAB */}
@@ -331,36 +331,36 @@ export default function AdminDashboard() {
                                 <div style={{ background: C.white, borderRadius: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: `1px solid ${C.ivoryDark}`, overflow: 'hidden' }}>
                                               <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.ivoryDark}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                               <h2 style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: 18, color: C.forestDark }}>Senaste ordrar</h2>h2>
-                                                              <span style={{ fontSize: 13, color: C.gray }}>Totalt {ORDERS_DATA.length} ordrar visas</span>span>
-                                              </div>div>
+                                                              <span style={{ fontSize: 13, color: C.gray }}>Totalt {ORDERS_DATA.length} ordrar visas</span>
+                                              </div>
                                               <div style={{ overflowX: 'auto' as const }}>
                                                               <table style={{ width: '100%', borderCollapse: 'collapse' as const }}>
                                                                                 <thead>
                                                                                                     <tr style={{ background: C.grayLight, borderBottom: `2px solid ${C.ivoryDark}` }}>
                                                                                                       {['Order-ID', 'Kund', 'Deal', 'Merchant', 'Belopp', 'Datum', 'Status'].map(h => (
-                                              <th key={h} style={{ padding: '12px 16px', textAlign: 'left' as const, fontSize: 12, fontWeight: 700, color: C.gray, whiteSpace: 'nowrap' as const, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{h}</th>th>
+                                              <th key={h} style={{ padding: '12px 16px', textAlign: 'left' as const, fontSize: 12, fontWeight: 700, color: C.gray, whiteSpace: 'nowrap' as const, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{h}</th>
                                             ))}
-                                                                                                      </tr>tr>
-                                                                                </thead>thead>
+                                                                                                      </tr>
+                                                                                </thead>
                                                                                 <tbody>
                                                                                   {ORDERS_DATA.map((order, i) => (
                                             <tr key={order.id} style={{ borderBottom: `1px solid ${C.ivoryDark}`, background: i % 2 === 0 ? C.white : C.grayLight }}>
-                                                                    <td style={{ padding: '14px 16px', fontWeight: 700, color: C.forest, fontSize: 13, whiteSpace: 'nowrap' as const }}>{order.id}</td>td>
-                                                                    <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 600, color: C.forestDark, whiteSpace: 'nowrap' as const }}>{order.customer}</td>td>
-                                                                    <td style={{ padding: '14px 16px', fontSize: 13, color: C.gray, maxWidth: 200 }}>{order.deal}</td>td>
-                                                                    <td style={{ padding: '14px 16px', fontSize: 13, color: C.gray, whiteSpace: 'nowrap' as const }}>{order.merchant}</td>td>
-                                                                    <td style={{ padding: '14px 16px', fontWeight: 700, color: C.forestDark, fontSize: 14, whiteSpace: 'nowrap' as const }}>{order.amount}</td>td>
-                                                                    <td style={{ padding: '14px 16px', fontSize: 12, color: C.gray, whiteSpace: 'nowrap' as const }}>{order.date}</td>td>
-                                                                    <td style={{ padding: '14px 16px' }}>{statusBadge(order.status)}</td>td>
-                                            </tr>tr>
+                                                                    <td style={{ padding: '14px 16px', fontWeight: 700, color: C.forest, fontSize: 13, whiteSpace: 'nowrap' as const }}>{order.id}</td>
+                                                                    <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 600, color: C.forestDark, whiteSpace: 'nowrap' as const }}>{order.customer}</td>
+                                                                    <td style={{ padding: '14px 16px', fontSize: 13, color: C.gray, maxWidth: 200 }}>{order.deal}</td>
+                                                                    <td style={{ padding: '14px 16px', fontSize: 13, color: C.gray, whiteSpace: 'nowrap' as const }}>{order.merchant}</td>
+                                                                    <td style={{ padding: '14px 16px', fontWeight: 700, color: C.forestDark, fontSize: 14, whiteSpace: 'nowrap' as const }}>{order.amount}</td>
+                                                                    <td style={{ padding: '14px 16px', fontSize: 12, color: C.gray, whiteSpace: 'nowrap' as const }}>{order.date}</td>
+                                                                    <td style={{ padding: '14px 16px' }}>{statusBadge(order.status)}</td>
+                                            </tr>
                                           ))}
-                                                                                </tbody>tbody>
-                                                              </table>table>
-                                              </div>div>
-                                </div>div>
-                    </div>div>
+                                                                                </tbody>
+                                                              </table>
+                                              </div>
+                                </div>
+                    </div>
                         )}
-                </div>div>
-        </div>div>
+                </div>
+        </div>
       )
 }</div>
