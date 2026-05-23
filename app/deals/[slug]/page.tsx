@@ -1,162 +1,126 @@
 import Link from 'next/link'
-import { getDeal, SAMPLE_DEALS, formatPrice, getDiscount } from '@/lib/data'
 import { notFound } from 'next/navigation'
 import BuyButton from './BuyButton'
 
-export async function generateStaticParams() {
-  return SAMPLE_DEALS.map(d => ({ slug: d.slug }))
+const G = '#1A3A2A'
+const AU = '#C4974A'
+const IV = '#F5F2ED'
+const WH = '#FFFFFF'
+const GR = '#6B7280'
+
+const DEALS = [
+  { id: 'massage-fotvard', title: 'Massage 60 min + fotvard', merchant: 'Aura Spa & Wellness', city: 'Stockholm', category: 'Skonhet', price: 549, original: 1099, discount: 50, rating: 4.9, reviews: 142, color: '#2D5A3D', description: 'Njut av en avkopplande helkroppsmassage pa 60 minuter kombinerat med en lyxig fotvard. Vara erfarna terapeuter anpassar behandlingen efter dina behov. Inkluderar: valkommen med te, klader, dusch och avslapningsrum.', includes: ['60 min helkroppsmassage', 'Fotvard 30 min', 'Te & frukt', 'Dusch & omkladningsrum'], valid: '2026-08-31', slug: 'massage-fotvard' },
+  { id: 'middag-tvakanten', title: '3-ratters middag for tva', merchant: 'Restaurang Tvakanten', city: 'Goteborg', category: 'Mat & Dryck', price: 699, original: 1398, discount: 50, rating: 4.7, reviews: 89, color: '#3D4A2D', description: 'Upplev en magnifik 3-ratters middag for tva pa Restaurang Tvakanten, Goteborgs mest omtalade fine dining destination. Menyn andras efter sasong.', includes: ['Forrat for 2', 'Varmratt for 2', 'Dessert for 2', 'Vatten & brod'], valid: '2026-07-31', slug: 'middag-tvakanten' },
+  { id: 'yoga-retreat', title: 'Yoga retreat helg', merchant: 'Inner Peace Studio', city: 'Goteborg', category: 'Halsa', price: 1299, original: 2199, discount: 41, rating: 4.8, reviews: 34, color: '#2D3A4A', description: 'En transformativ helgupplevelse med yoga, meditation och mindfulness. Lad upp kroppens och sjalens batterier pa Inner Peace Studio.', includes: ['2 yogapass', 'Meditationssession', 'Vegansk lunch', 'Yogamatta och props'], valid: '2026-09-30', slug: 'yoga-retreat' },
+  { id: 'tesla-service', title: 'Tesla-service komplett', merchant: 'AutoPremium Sverige', city: 'Stockholm', category: 'Bil & Service', price: 1799, original: 2899, discount: 38, rating: 4.6, reviews: 67, color: '#3A2D1A', description: 'Komplett service for din Tesla. Vi ar certifierade Tesla-tekniker med over 500 genomforda servicar. Inkluderar diagnostik, bromsinspektion och uppdatering.', includes: ['Full diagnostik', 'Bromskontroll', 'Dackinspektion', 'Software-uppdatering'], valid: '2026-12-31', slug: 'tesla-service' },
+  { id: 'vinprovning', title: 'Vinprovning for 2', merchant: 'Vinkallaren', city: 'Malmo', category: 'Mat & Dryck', price: 599, original: 1099, discount: 45, rating: 4.9, reviews: 201, color: '#4A2D3A', description: 'En guidad vinprovning for tva med fokus pa europeiska viner. Var sommelier guidar er genom sju utsokta viner med tillhorande ostbricka.', includes: ['7 viner att prova', 'Ostbricka for 2', 'Guidad provning av sommelier', 'Vinguide att ta hem'], valid: '2026-10-31', slug: 'vinprovning' },
+  { id: 'golf-lunch', title: 'Golf 18 hal + lunch', merchant: 'Barseback Golf', city: 'Malmo', category: 'Sport', price: 895, original: 1650, discount: 46, rating: 4.5, reviews: 58, color: '#2D4A2D', description: 'Spela 18 hal pa den legendariska Barseback Golf & Country Club, en av Skandinaviens mest prestige-fyllda golfbanor, med lunch inkluderad.', includes: ['18 hal greenfee', 'Lunch i clubhouse', 'Driving range fore ronden', 'GPS pa golfbilen'], valid: '2026-09-30', slug: 'golf-lunch' },
+  { id: 'padel', title: 'Padel 2h + utrustning', merchant: 'PadelCity Stockholm', city: 'Stockholm', category: 'Sport', price: 395, original: 799, discount: 51, rating: 4.8, reviews: 312, color: '#1A2D4A', description: 'Boka en padelbana i 2 timmar pa PadelCity Stockholm med all utrustning inkluderad. Perfekt for bade nybojare och erfarna spelare.', includes: ['2h banbokning', 'Racket & bollar', 'Omkladningsrum & dusch', 'Instruktionsvideo for nybojare'], valid: '2026-12-31', slug: 'padel' },
+  { id: 'hotell-frukost', title: 'Hotellnatt + frukost', merchant: 'Clarion Hotel Post', city: 'Goteborg', category: 'Resa & Boende', price: 1195, original: 2100, discount: 43, rating: 4.7, reviews: 76, color: '#2D1A3A', description: 'Bo en natt pa lyxiga Clarion Hotel Post i centrala Goteborg, ett ikoniskt hotell inrymt i det gamla posthuset fran 1925. Frukost ingar.', includes: ['Dubbelrum 1 natt', 'Frukostbuffet for 2', 'Tillgang till gym & spa', 'Sen utcheckning kl 14:00'], valid: '2026-11-30', slug: 'hotell-frukost' }
+]
+
+function getDeal(slug) { return DEALS.find(d => d.slug === slug) || null }
+
+export function generateStaticParams() {
+  return DEALS.map(d => ({ slug: d.slug }))
 }
 
 export default function DealPage({ params }: { params: { slug: string } }) {
   const deal = getDeal(params.slug)
   if (!deal) notFound()
 
-  const discount = getDiscount(deal.originalPrice, deal.dealPrice)
-  const remaining = deal.maxQty - deal.soldCount
-  const soldPercent = Math.round((deal.soldCount / deal.maxQty) * 100)
-
-  const related = SAMPLE_DEALS.filter(d => d.id !== deal.id && d.category === deal.category).slice(0, 3)
+  const related = DEALS.filter(d => d.slug !== deal.slug && d.category === deal.category).slice(0, 3)
 
   return (
-    <main className="min-h-screen bg-canvas-100">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-canvas-100/95 backdrop-blur-md border-b border-canvas-300/40">
-        <div className="max-w-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="font-display text-2xl font-semibold text-forest">Valor</Link>
-          <div className="flex gap-4 items-center text-sm">
-            <Link href="/deals" className="text-gray-600 hover:text-forest">Alla erbjudanden</Link>
-            <Link href="/logga-in" className="bg-forest text-white px-4 py-2 rounded-full hover:bg-forest/90 transition-colors">
-              Logga in
-            </Link>
-          </div>
+    <div style={{ background: IV, minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+      {/* NAV */}
+      <nav style={{ background: WH, borderBottom: '1px solid #E8E4DF', position: 'sticky', top: 0, zIndex: 50, padding: '0 24px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+          <Link href='/' style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+            <div style={{ width: 36, height: 36, background: G, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: AU, fontWeight: 700, fontSize: 16 }}>V</div>
+            <span style={{ fontFamily: 'Georgia, serif', fontSize: 20, fontWeight: 700, color: G }}>Valor</span>
+          </Link>
+          <Link href='/deals' style={{ fontSize: 14, color: GR, textDecoration: 'none' }}>Alla deals</Link>
         </div>
       </nav>
 
-      <div className="pt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-            <Link href="/" className="hover:text-forest">Hem</Link>
-            <span>/</span>
-            <Link href="/deals" className="hover:text-forest">Erbjudanden</Link>
-            <span>/</span>
-            <span className="text-forest">{deal.title}</span>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              {deal.images.length > 0 ? (
-                <div className="relative rounded-2xl overflow-hidden mb-6 aspect-video">
-                  <img
-                    src={deal.images[0]}
-                    alt={deal.title}
-                    className="w-full h-full object-cover"
-                  />
-                  {deal.membersOnly && (
-                    <div className="absolute top-4 left-4 bg-champagne text-white text-xs font-medium px-3 py-1.5 rounded-full">
-                      Members Only
-                    </div>
-                  )}
-                  <div className="absolute top-4 right-4 bg-forest text-white text-sm font-bold px-3 py-1.5 rounded-full">
-                    -{discount}%
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-2xl bg-canvas-200 mb-6 aspect-video flex items-center justify-center">
-                  <span className="text-4xl">{deal.categoryEmoji}</span>
-                </div>
-              )}
-
-              <div className="flex gap-2 mb-4">
-                <span className="text-xs font-medium bg-canvas-200 text-gray-600 px-3 py-1.5 rounded-full">
-                  {deal.category}
-                </span>
-                <span className="text-xs font-medium bg-canvas-200 text-gray-600 px-3 py-1.5 rounded-full">
-                  {deal.city}
-                </span>
-              </div>
-
-              <h1 className="font-display text-3xl sm:text-4xl font-semibold text-forest mb-3">
-                {deal.title}
-              </h1>
-              <p className="text-lg text-gray-600 mb-2">{deal.merchantName}</p>
-              <p className="text-sm text-gray-500 mb-6">{deal.address}</p>
-
-              <div className="flex items-center gap-2 mb-8">
-                <div className="flex">
-                  {[1,2,3,4,5].map(i => (
-                    <svg key={i} className={`w-4 h-4 ${i <= Math.floor(deal.rating) ? 'text-champagne' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                  ))}
-                </div>
-                <span className="text-sm font-medium text-forest">{deal.rating}</span>
-                <span className="text-sm text-gray-400">({deal.reviewCount} recensioner)</span>
-              </div>
-
-              <div className="bg-white rounded-2xl p-6 mb-6 border border-canvas-300/50">
-                <h2 className="font-semibold text-forest text-lg mb-4">Om erbjudandet</h2>
-                <p className="text-gray-600 leading-relaxed mb-6">{deal.description}</p>
-                <h3 className="font-semibold text-forest mb-3">Ingår i priset</h3>
-                <ul className="space-y-2">
-                  {deal.highlights.map((h, i) => (
-                    <li key={i} className="flex items-center gap-3 text-gray-600">
-                      <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
-                      </svg>
-                      {h}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100">
-                <h3 className="font-semibold text-forest mb-2">Att tanka pa</h3>
-                <p className="text-sm text-gray-600">{deal.finePrint}</p>
-                <p className="text-sm text-gray-500 mt-2">Giltigt till: {deal.validUntil}</p>
-              </div>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 32 }}>
+          {/* LEFT */}
+          <div>
+            {/* IMAGE */}
+            <div style={{ height: 360, background: deal.color, borderRadius: 20, marginBottom: 32, position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 24 }}>
+              <span style={{ position: 'absolute', top: 20, left: 20, background: AU, color: WH, borderRadius: 999, padding: '6px 16px', fontSize: 15, fontWeight: 700 }}>-{deal.discount}%</span>
+              <span style={{ background: 'rgba(0,0,0,0.4)', color: WH, borderRadius: 999, padding: '6px 16px', fontSize: 13 }}>{deal.category}</span>
             </div>
-
-            <div className="lg:col-span-1">
-              <div className="sticky top-24 bg-white rounded-2xl p-6 shadow-lg border border-canvas-300/30">
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-3xl font-bold text-forest">{formatPrice(deal.dealPrice)}</span>
-                  <span className="text-sm text-gray-400">per person</span>
+            {/* DETAILS */}
+            <div style={{ background: WH, borderRadius: 16, padding: 28, marginBottom: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+              <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: G, margin: '0 0 16px' }}>Vad ingaar?</h2>
+              {deal.includes.map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < deal.includes.length - 1 ? '1px solid #F0EDE8' : 'none' }}>
+                  <span style={{ width: 24, height: 24, background: '#F0FDF4', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#16A34A', flexShrink: 0 }}>✓</span>
+                  <span style={{ fontSize: 15, color: '#333' }}>{item}</span>
                 </div>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="line-through text-gray-400 text-sm">{formatPrice(deal.originalPrice)}</span>
-                  <span className="text-green-600 text-sm font-medium">Spara {formatPrice(deal.originalPrice - deal.dealPrice)}</span>
+              ))}
+            </div>
+            <div style={{ background: WH, borderRadius: 16, padding: 28, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+              <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: G, margin: '0 0 12px' }}>Om erbjudandet</h2>
+              <p style={{ fontSize: 15, lineHeight: 1.7, color: '#444', margin: 0 }}>{deal.description}</p>
+            </div>
+          </div>
+          {/* RIGHT */}
+          <div>
+            <div style={{ background: WH, borderRadius: 20, padding: 28, boxShadow: '0 4px 24px rgba(0,0,0,0.1)', position: 'sticky', top: 84 }}>
+              <p style={{ color: AU, fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px' }}>{deal.merchant} · {deal.city}</p>
+              <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: G, margin: '0 0 16px', lineHeight: 1.3 }}>{deal.title}</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                <span style={{ color: '#F59E0B', fontSize: 18 }}>★</span>
+                <span style={{ fontWeight: 600, color: G }}>{deal.rating}</span>
+                <span style={{ color: GR, fontSize: 13 }}>({deal.reviews} recensioner)</span>
+              </div>
+              <div style={{ background: IV, borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 4 }}>
+                  <span style={{ fontSize: 32, fontWeight: 700, color: G }}>{deal.price.toLocaleString('sv-SE')} kr</span>
+                  <span style={{ fontSize: 16, color: GR, textDecoration: 'line-through' }}>{deal.original.toLocaleString('sv-SE')} kr</span>
                 </div>
-
-                <div className="mb-4">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>{deal.soldCount} salta</span>
-                    <span>{remaining} kvar</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5">
-                    <div className="bg-champagne rounded-full h-1.5" style={{ width: `${soldPercent}%` }}></div>
-                  </div>
-                </div>
-
-                <BuyButton deal={deal} />
-
-                <div className="mt-4 pt-4 border-t border-canvas-200 space-y-2 text-xs text-gray-500">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span>Pengarna-tillbaka-garanti</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                    </svg>
-                    <span>Saker betalning</span>
-                  </div>
-                </div>
+                <span style={{ fontSize: 14, color: '#16A34A', fontWeight: 600 }}>Du sparar {(deal.original - deal.price).toLocaleString('sv-SE')} kr</span>
+              </div>
+              <BuyButton deal={deal} />
+              <div style={{ marginTop: 16, padding: '12px 16px', background: '#F0FDF4', borderRadius: 10 }}>
+                <p style={{ fontSize: 13, color: '#16A34A', margin: '0 0 4px', fontWeight: 600 }}>Giltig till {deal.valid}</p>
+                <p style={{ fontSize: 12, color: GR, margin: 0 }}>Voucher skickas direkt till din e-post</p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* RELATED */}
+        {related.length > 0 && (
+          <div style={{ marginTop: 48 }}>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: G, margin: '0 0 24px' }}>Fler deals du kan gilla</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+              {related.map(r => (
+                <Link key={r.slug} href={'/deals/' + r.slug} style={{ textDecoration: 'none' }}>
+                  <div style={{ background: WH, borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+                    <div style={{ height: 140, background: r.color, position: 'relative' }}>
+                      <span style={{ position: 'absolute', top: 12, left: 12, background: AU, color: WH, borderRadius: 999, padding: '4px 10px', fontSize: 12, fontWeight: 700 }}>-{r.discount}%</span>
+                    </div>
+                    <div style={{ padding: 16 }}>
+                      <p style={{ color: AU, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', margin: '0 0 4px' }}>{r.merchant}</p>
+                      <h3 style={{ fontFamily: 'Georgia, serif', fontSize: 16, color: G, margin: '0 0 8px' }}>{r.title}</h3>
+                      <span style={{ fontSize: 18, fontWeight: 700, color: G }}>{r.price.toLocaleString('sv-SE')} kr</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-    </main>
+
+      <footer style={{ background: G, color: 'rgba(255,255,255,0.6)', textAlign: 'center', padding: '24px', marginTop: 48, fontSize: 13 }}>
+        <p style={{ margin: 0 }}>2026 Valor AB</p>
+      </footer>
+    </div>
   )
 }
