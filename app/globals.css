@@ -23,53 +23,53 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply bg-forest text-white px-6 py-3 rounded-xl font-medium text-sm
-           transition-all duration-200 hover:bg-forest-700 active:scale-95
-           focus:outline-none focus:ring-2 focus:ring-forest/40 disabled:opacity-50;
+    @apply inline-flex items-center justify-center bg-forest-700 text-white font-medium rounded-xl px-6 py-3 transition-all duration-200 hover:bg-forest-800 active:scale-95 focus:outline-none focus:ring-2 focus:ring-forest-500/40 disabled:opacity-50;
   }
   .btn-secondary {
-    @apply bg-canvas-200 text-canvas-800 px-6 py-3 rounded-xl font-medium text-sm
-           border border-canvas-300 transition-all duration-200
-           hover:bg-canvas-300 focus:outline-none focus:ring-2 focus:ring-forest/20;
+    @apply inline-flex items-center justify-center bg-canvas-200 text-forest-800 font-medium rounded-xl px-6 py-3 transition-all duration-200 hover:bg-canvas-300 active:scale-95 focus:outline-none focus:ring-2 focus:ring-forest-500/40;
   }
   .btn-gold {
-    @apply bg-gold text-white px-6 py-3 rounded-xl font-medium text-sm
-           transition-all duration-200 hover:bg-gold-600 active:scale-95
-           focus:outline-none focus:ring-2 focus:ring-gold/40;
+    @apply inline-flex items-center justify-center bg-gold-400 text-white font-semibold rounded-xl px-6 py-3 transition-all duration-200 hover:bg-gold-600 active:scale-95 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gold-400/40;
   }
-  .card {
-    @apply bg-white rounded-2xl shadow-card overflow-hidden
-           transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1;
-  }
-  .input {
-    @apply w-full px-4 py-3 bg-white border border-canvas-300 rounded-xl
-           text-canvas-800 placeholder:text-canvas-400 text-sm
-           transition-all duration-200 outline-none
-           focus:border-forest focus:ring-2 focus:ring-forest/20;
-  }
-  .section-title {
-    @apply font-display text-3xl md:text-4xl font-semibold text-canvas-800 tracking-tight;
-  }
-  .badge-discount {
-    @apply bg-forest text-white text-xs font-bold px-2.5 py-1 rounded-full tracking-wide;
-  }
-  .badge-gold {
-    @apply bg-gold/20 text-gold-600 text-xs font-semibold px-2.5 py-1 rounded-full
-           border border-gold/30 tracking-wide;
+  .btn-outline {
+    @apply inline-flex items-center justify-center border-2 border-forest-700 text-forest-700 font-medium rounded-xl px-6 py-3 transition-all duration-200 hover:bg-forest-700 hover:text-white active:scale-95;
   }
   .nav-link {
-    @apply text-sm font-medium text-canvas-600 hover:text-forest transition-colors duration-200;
+    @apply text-canvas-700 font-medium text-sm transition-colors duration-150 hover:text-forest-700 relative;
+  }
+  .deal-card {
+    @apply bg-white rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 cursor-pointer border border-canvas-200;
+  }
+  .section-title {
+    @apply font-display text-3xl font-bold text-forest-800 tracking-tight;
+  }
+  .badge-discount {
+    @apply inline-flex items-center bg-forest-700 text-white text-xs font-bold px-2.5 py-1 rounded-full;
+  }
+  .badge-category {
+    @apply inline-flex items-center bg-canvas-200 text-canvas-700 text-xs font-medium px-3 py-1 rounded-full capitalize;
+  }
+  .input-field {
+    @apply w-full bg-white border border-canvas-300 rounded-xl px-4 py-3 text-sm text-forest-800 placeholder-canvas-500 focus:outline-none focus:ring-2 focus:ring-forest-500/30 focus:border-forest-500 transition-all duration-200;
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1;
   }
   .price-tag {
-    @apply font-price text-2xl text-forest;
+    @apply font-price text-2xl font-bold text-forest-800;
   }
+  .price-original {
+    @apply text-sm text-canvas-500 line-through font-normal;
+  }
+  .tab-active {
+    @apply bg-white text-forest-800 shadow-sm font-semibold;
+  }
+  .tab-inactive {
+    @apply text-canvas-600 hover:text-forest-700 transition-colors;
+  }
+  .stat-card {
+    @apply bg-white rounded-2xl p-6 shadow-card border border-canvas-200;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 }
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #F5F2ED; }
-::-webkit-scrollbar-thumb { background: #C8C2B8; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #9E9890; }
-
-/* Selection */
-::selection { background: #1A3A2A; color: white; }
