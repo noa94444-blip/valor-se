@@ -145,7 +145,6 @@ export default function AdminDashboard() {
                         {tab.icon} {tab.label}
                       </button>
                     ))}
-                          </div>
 
                   {/* OVERVIEW TAB */}
                   {activeTab === 'overview' && (
@@ -158,12 +157,11 @@ export default function AdminDashboard() {
                                                                             <span style={{ fontSize: 28 }}>{stat.icon}</span>
                                                                             <span style={{ background: stat.positive ? '#D1FAE5' : '#FEE2E2', color: stat.positive ? C.green : C.red, fontSize: 12, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>{stat.change}</span>
                                                         </div>
-                                                        <div style={{ fontSize: 24, fontWeight: 800, color: C.forestDark, fontFamily: 'Georgia, serif', marginBottom: 4 }}>{stat.value}</div>
-                                                        <div style={{ fontSize: 13, fontWeight: 600, color: C.gray, marginBottom: 2 }}>{stat.label}</div>
-                                                        <div style={{ fontSize: 11, color: '#9CA3AF' }}>{stat.sub}</div>
+                                                        <div style={{ fontSize: 24, fontWeight: 800, color: C.forestDark, fontFamily: 'Georgia, serif', marginBottom: 4 }}>{stat.value}
+                                                        <div style={{ fontSize: 13, fontWeight: 600, color: C.gray, marginBottom: 2 }}>{stat.label}
+                                                        <div style={{ fontSize: 11, color: '#9CA3AF' }}>{stat.sub}
                                       </div>
                                     ))}
-                                </div>
                     
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
                                   {/* Pending deals */}
@@ -183,8 +181,8 @@ export default function AdminDashboard() {
                                                                 <div key={deal.id} style={{ border: `1px solid ${C.ivoryDark}`, borderRadius: 12, padding: 16, background: C.grayLight }}>
                                                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                                                                                                                   <div>
-                                                                                                                                              <div style={{ fontWeight: 700, color: C.forestDark, fontSize: 15, marginBottom: 4 }}>{deal.title}</div>
-                                                                                                                                              <div style={{ fontSize: 13, color: C.gray }}>{deal.merchant} · {deal.city}</div>
+                                                                                                                                              <div style={{ fontWeight: 700, color: C.forestDark, fontSize: 15, marginBottom: 4 }}>{deal.title}
+                                                                                                                                              <div style={{ fontSize: 13, color: C.gray }}>{deal.merchant} · {deal.city}
                                                                                                                     </div>
                                                                                                                   <div style={{ textAlign: 'right' as const }}>
                                                                                                                                               <div style={{ fontWeight: 800, color: C.forest, fontSize: 16 }}>{(deal.price || 0).toLocaleString('sv-SE')} kr</div>
@@ -197,9 +195,7 @@ export default function AdminDashboard() {
                                                                                           </div>
                                                                 </div>
                                                               ))}
-                                        </div>
                                                               )}
-                                              </div>
                                 
                                   {/* Activity feed */}
                                               <div style={{ background: C.white, borderRadius: 16, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: `1px solid ${C.ivoryDark}` }}>
@@ -209,13 +205,12 @@ export default function AdminDashboard() {
                                           <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                                                                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, marginTop: 6, flexShrink: 0 }}></div>
                                                                 <div style={{ flex: 1 }}>
-                                                                                        <div style={{ fontSize: 13, fontWeight: 600, color: C.forestDark }}>{a.text}</div>
-                                                                                        <div style={{ fontSize: 12, color: C.gray }}>{a.detail}</div>
+                                                                                        <div style={{ fontSize: 13, fontWeight: 600, color: C.forestDark }}>{a.text}
+                                                                                        <div style={{ fontSize: 12, color: C.gray }}>{a.detail}
                                                                 </div>
-                                                                <div style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap' as const }}>{a.time}</div>
+                                                                <div style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap' as const }}>{a.time}
                                           </div>
                                         ))}
-                                                              </div>
                                               </div>
                                 </div>
                     </div>
@@ -250,8 +245,8 @@ export default function AdminDashboard() {
                                                                                   {filteredDeals.map((deal, i) => (
                                             <tr key={deal.id} style={{ borderBottom: `1px solid ${C.ivoryDark}`, background: i % 2 === 0 ? C.white : C.grayLight }}>
                                                                     <td style={{ padding: '14px 16px' }}>
-                                                                                              <div style={{ fontWeight: 600, color: C.forestDark, fontSize: 14, maxWidth: 200 }}>{deal.title}</div>
-                                                                                              <div style={{ fontSize: 12, color: C.gray }}>{deal.category}</div>
+                                                                                              <div style={{ fontWeight: 600, color: C.forestDark, fontSize: 14, maxWidth: 200 }}>{deal.title}
+                                                                                              <div style={{ fontSize: 12, color: C.gray }}>{deal.category}
                                                                     </td>
                                                                     <td style={{ padding: '14px 16px', fontSize: 13, color: C.gray, whiteSpace: 'nowrap' as const }}>{deal.merchant}</td>
                                                                     <td style={{ padding: '14px 16px', fontSize: 13, color: C.gray }}>{deal.city}</td>
@@ -298,30 +293,27 @@ export default function AdminDashboard() {
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                                                                             <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${C.forest}, ${C.forestMid})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.gold, fontSize: 20, fontWeight: 700 }}>
                                                                               {m.name.charAt(0)}
-                                                                            </div>
                                                           {statusBadge(m.status)}
-                                                        </div>
-                                                        <div style={{ fontWeight: 700, color: C.forestDark, fontSize: 16, marginBottom: 4 }}>{m.name}</div>
-                                                        <div style={{ fontSize: 13, color: C.gray, marginBottom: 16 }}>{m.city} · {m.category}</div>
+                                                        <div style={{ fontWeight: 700, color: C.forestDark, fontSize: 16, marginBottom: 4 }}>{m.name}
+                                                        <div style={{ fontSize: 13, color: C.gray, marginBottom: 16 }}>{m.city} · {m.category}
                                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
                                                                             <div style={{ textAlign: 'center' as const, background: C.grayLight, borderRadius: 10, padding: '10px 8px' }}>
-                                                                                                  <div style={{ fontSize: 14, fontWeight: 800, color: C.forest }}>{m.deals}</div>
+                                                                                                  <div style={{ fontSize: 14, fontWeight: 800, color: C.forest }}>{m.deals}
                                                                                                   <div style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>DEALS</div>
                                                                             </div>
                                                                             <div style={{ textAlign: 'center' as const, background: C.grayLight, borderRadius: 10, padding: '10px 8px' }}>
-                                                                                                  <div style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>{m.rating}</div>
+                                                                                                  <div style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>{m.rating}
                                                                                                   <div style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>BETYG</div>
                                                                             </div>
                                                                             <div style={{ textAlign: 'center' as const, background: C.grayLight, borderRadius: 10, padding: '10px 8px' }}>
-                                                                                                  <div style={{ fontSize: 11, fontWeight: 800, color: C.forestDark }}>{m.revenue.split(' ')[0]}</div>
+                                                                                                  <div style={{ fontSize: 11, fontWeight: 800, color: C.forestDark }}>{m.revenue.split(' ')[0]}
                                                                                                   <div style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>INTÄKT</div>
                                                                             </div>
                                                         </div>
-                                                        <div style={{ fontSize: 11, color: C.gray, marginBottom: 14 }}>Ansluten: {m.joined}</div>
+                                                        <div style={{ fontSize: 11, color: C.gray, marginBottom: 14 }}>Ansluten: {m.joined}
                                                         <button style={{ width: '100%', padding: '9px', background: C.forestDark, color: C.white, border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Visa profil →</button>
                                       </div>
                                     ))}
-                                </div>
                     </div>
                         )}
                 
@@ -360,7 +352,6 @@ export default function AdminDashboard() {
                                 </div>
                     </div>
                         )}
-                </div>
         </div>
       )
-}</div>
+}
