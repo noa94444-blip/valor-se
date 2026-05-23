@@ -130,7 +130,7 @@ export default function AdminDashboard() {
                   {/* Page header */}
                           <div style={{ marginBottom: 28 }}>
                                       <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, fontWeight: 700, color: C.forestDark, margin: 0 }}>Plattformsöversikt</h1>h1>
-                                      <p style={{ color: C.gray, fontSize: 14, margin: '6px 0 0' }}>Admin • noa · Fredag 23 maj 2026</p>p>
+                                      <p style={{ color: C.gray, fontSize: 14, margin: '6px 0 0' }}>Admin • noa · Fredag 23 maj 2026</p>
                           </div>
 
                   {/* Tabs */}
@@ -160,7 +160,6 @@ export default function AdminDashboard() {
                                                         <div style={{ fontSize: 24, fontWeight: 800, color: C.forestDark, fontFamily: 'Georgia, serif', marginBottom: 4 }}>{stat.value}
                                                         <div style={{ fontSize: 13, fontWeight: 600, color: C.gray, marginBottom: 2 }}>{stat.label}
                                                         <div style={{ fontSize: 11, color: '#9CA3AF' }}>{stat.sub}
-                                      </div>
                                     ))}
                     
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
@@ -173,7 +172,7 @@ export default function AdminDashboard() {
                                                 {pendingDeals.length === 0 ? (
                                         <div style={{ textAlign: 'center' as const, padding: '40px 20px', color: C.gray }}>
                                                             <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-                                                            <p style={{ margin: 0 }}>Alla deals är godkända!</p>p>
+                                                            <p style={{ margin: 0 }}>Alla deals är godkända!</p>
                                         </div>
                                       ) : (
                                         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
@@ -183,7 +182,6 @@ export default function AdminDashboard() {
                                                                                                                   <div>
                                                                                                                                               <div style={{ fontWeight: 700, color: C.forestDark, fontSize: 15, marginBottom: 4 }}>{deal.title}
                                                                                                                                               <div style={{ fontSize: 13, color: C.gray }}>{deal.merchant} · {deal.city}
-                                                                                                                    </div>
                                                                                                                   <div style={{ textAlign: 'right' as const }}>
                                                                                                                                               <div style={{ fontWeight: 800, color: C.forest, fontSize: 16 }}>{(deal.price || 0).toLocaleString('sv-SE')} kr</div>
                                                                                                                                               <div style={{ fontSize: 12, color: C.gray, textDecoration: 'line-through' }}>{(deal.original || 0).toLocaleString('sv-SE')} kr</div>
@@ -207,11 +205,8 @@ export default function AdminDashboard() {
                                                                 <div style={{ flex: 1 }}>
                                                                                         <div style={{ fontSize: 13, fontWeight: 600, color: C.forestDark }}>{a.text}
                                                                                         <div style={{ fontSize: 12, color: C.gray }}>{a.detail}
-                                                                </div>
                                                                 <div style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap' as const }}>{a.time}
-                                          </div>
                                         ))}
-                                              </div>
                                 </div>
                     </div>
                         )}
@@ -314,7 +309,6 @@ export default function AdminDashboard() {
                                                         <button style={{ width: '100%', padding: '9px', background: C.forestDark, color: C.white, border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Visa profil →</button>
                                       </div>
                                     ))}
-                    </div>
                         )}
                 
                   {/* ORDERS TAB */}
@@ -352,6 +346,5 @@ export default function AdminDashboard() {
                                 </div>
                     </div>
                         )}
-        </div>
       )
 }
