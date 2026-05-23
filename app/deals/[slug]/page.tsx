@@ -28,6 +28,8 @@ export default async function DealPage({ params }: { params: { slug: string } })
   if (!deal) notFound()
 
   const merchant = deal.merchants
+  const discountPct = deal.original_price > 0 ? Math.round((1 - deal.deal_price / deal.original_price) * 100) : 0
+  const savings = deal.original_price - deal.deal_price
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: IV, fontFamily: 'Inter, sans-serif' }}>
@@ -53,9 +55,11 @@ export default async function DealPage({ params }: { params: { slug: string } })
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80, opacity: 0.3, color: WH }}>✦</div>
               )}
-              <div style={{ position: 'absolute', top: 20, right: 20, backgroundColor: AU, color: WH, padding: '6px 14px', borderRadius: 24, fontSize: 14, fontWeight: 700 }}>
-                -{deal.discount_pct}%
-              </div>
+              {discountPct > 0 && (
+                <div style={{ position: 'absolute', top: 20, right: 20, backgroundColor: AU, color: WH, padding: '6px 14px', borderRadius: 24, fontSize: 14, fontWeight: 700 }}>
+                  -{discountPct}%
+                </div>
+              )}
             </div>
 
             {/* Merchant info */}
@@ -64,9 +68,12 @@ export default async function DealPage({ params }: { params: { slug: string } })
                 <div style={{ fontSize: 11, color: AU, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }}>Från</div>
                 <div style={{ fontSize: 20, color: G, fontFamily: 'Georgia, serif', fontWeight: 400, marginBottom: 8 }}>{merchant.name}</div>
                 {merchant.description && <p style={{ color: GR, fontSize: 14, lineHeight: 1.6, margin: '0 0 12px' }}>{merchant.description}</p>}
-                <div style={{ fontSize: 13, color: GR }}>
-                  📍 {merchant.address}, {merchant.city}
-                </div>
+                {merchant.address && (
+                  <div style={{ fontSize: 13, color: GR }}>📍 {merchant.address}, {merchant.city}</div>
+                )}
+                {!merchant.address && merchant.city && (
+                  <div style={{ fontSize: 13, color: GR }}>📍 {merchant.city}</div>
+                )}
               </div>
             )}
 
@@ -74,6 +81,16 @@ export default async function DealPage({ params }: { params: { slug: string } })
             <div style={{ backgroundColor: WH, borderRadius: 12, padding: 24, border: `1px solid ${LG}` }}>
               <h2 style={{ fontSize: 18, color: G, fontFamily: 'Georgia, serif', fontWeight: 400, margin: '0 0 16px' }}>Om detta erbjudande</h2>
               <p style={{ color: GR, fontSize: 15, lineHeight: 1.8, margin: 0 }}>{deal.description}</p>
+              
+              {deal.includes && Array.isArray(deal.includes) && (
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 14, color: G, fontWeight: 600, marginBottom: 10 }}>Ingår i priset:</div>
+                  {deal.includes.map((item: string, i: number) => (
+                    <div key={i} style={{ fontSize: 14, color: GR, marginBottom: 6 }}>✓ {item}</div>
+                  ))}
+                </div>
+              )}
+              
               {deal.valid_until && (
                 <div style={{ marginTop: 16, padding: '12px 16px', backgroundColor: IV, borderRadius: 8, fontSize: 13, color: GR }}>
                   ⏰ Erbjudandet gäller till {new Date(deal.valid_until).toLocaleDateString('sv-SE')}
@@ -91,9 +108,13 @@ export default async function DealPage({ params }: { params: { slug: string } })
               <div style={{ padding: '16px 0', borderTop: `1px solid ${LG}`, borderBottom: `1px solid ${LG}`, marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8 }}>
                   <span style={{ fontSize: 36, fontWeight: 700, color: G }}>{deal.deal_price} kr</span>
-                  <span style={{ fontSize: 16, color: GR, textDecoration: 'line-through' }}>{deal.original_price} kr</span>
+                  {deal.original_price > deal.deal_price && (
+                    <span style={{ fontSize: 16, color: GR, textDecoration: 'line-through' }}>{deal.original_price} kr</span>
+                  )}
                 </div>
-                <div style={{ fontSize: 13, color: AU, fontWeight: 600 }}>Du sparar {deal.original_price - deal.deal_price} kr ({deal.discount_pct}% rabatt)</div>
+                {savings > 0 && (
+                  <div style={{ fontSize: 13, color: AU, fontWeight: 600 }}>Du sparar {savings} kr ({discountPct}% rabatt)</div>
+                )}
               </div>
 
               <BuyButton deal={deal} />
@@ -101,8 +122,17 @@ export default async function DealPage({ params }: { params: { slug: string } })
               <div style={{ marginTop: 20, fontSize: 12, color: GR, lineHeight: 1.6 }}>
                 <div style={{ marginBottom: 6 }}>✓ Säker betalning</div>
                 <div style={{ marginBottom: 6 }}>✓ Voucher skickas direkt till din e-post</div>
-                <div>✓ Giltigt i {new Date(deal.valid_until || '').toLocaleDateString('sv-SE')}</div>
+                {deal.valid_until && (
+                  <div>✓ Giltigt till {new Date(deal.valid_until).toLocaleDateString('sv-SE')}</div>
+                )}
               </div>
+              
+              {deal.rating && (
+                <div style={{ marginTop: 16, padding: '12px 16px', backgroundColor: IV, borderRadius: 8 }}>
+                  <span style={{ color: AU }}>{'★'.repeat(Math.floor(deal.rating))}</span>
+                  <span style={{ fontSize: 13, color: GR, marginLeft: 8 }}>{deal.rating} ({deal.review_count || 0} recensioner)</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
