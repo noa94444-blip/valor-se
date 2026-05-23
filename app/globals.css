@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+
+:root {
+  --font-playfair: 'Playfair Display', serif;
+  --font-inter: 'Inter', sans-serif;
+  --font-dm-serif: 'DM Serif Display', serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: var(--font-inter);
+  background-color: #F5F2ED;
+  color: #26231F;
+  line-height: 1.6;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-forest text-white px-6 py-3 rounded-xl font-medium text-sm
+           transition-all duration-200 hover:bg-forest-700 active:scale-95
+           focus:outline-none focus:ring-2 focus:ring-forest/40 disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply bg-canvas-200 text-canvas-800 px-6 py-3 rounded-xl font-medium text-sm
+           border border-canvas-300 transition-all duration-200
+           hover:bg-canvas-300 focus:outline-none focus:ring-2 focus:ring-forest/20;
+  }
+  .btn-gold {
+    @apply bg-gold text-white px-6 py-3 rounded-xl font-medium text-sm
+           transition-all duration-200 hover:bg-gold-600 active:scale-95
+           focus:outline-none focus:ring-2 focus:ring-gold/40;
+  }
+  .card {
+    @apply bg-white rounded-2xl shadow-card overflow-hidden
+           transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1;
+  }
+  .input {
+    @apply w-full px-4 py-3 bg-white border border-canvas-300 rounded-xl
+           text-canvas-800 placeholder:text-canvas-400 text-sm
+           transition-all duration-200 outline-none
+           focus:border-forest focus:ring-2 focus:ring-forest/20;
+  }
+  .section-title {
+    @apply font-display text-3xl md:text-4xl font-semibold text-canvas-800 tracking-tight;
+  }
+  .badge-discount {
+    @apply bg-forest text-white text-xs font-bold px-2.5 py-1 rounded-full tracking-wide;
+  }
+  .badge-gold {
+    @apply bg-gold/20 text-gold-600 text-xs font-semibold px-2.5 py-1 rounded-full
+           border border-gold/30 tracking-wide;
+  }
+  .nav-link {
+    @apply text-sm font-medium text-canvas-600 hover:text-forest transition-colors duration-200;
+  }
+  .price-tag {
+    @apply font-price text-2xl text-forest;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #F5F2ED; }
+::-webkit-scrollbar-thumb { background: #C8C2B8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9E9890; }
+
+/* Selection */
+::selection { background: #1A3A2A; color: white; }
