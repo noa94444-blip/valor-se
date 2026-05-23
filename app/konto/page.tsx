@@ -1,146 +1,217 @@
 'use client'
-import { useState } from 'react'
-import Link from 'next/link'
+
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 const G = '#1A3A2A'
 const AU = '#C4974A'
 const IV = '#F5F2ED'
 const WH = '#FFFFFF'
 const GR = '#6B7280'
-
-const VOUCHERS = [
-  { code: 'VAL-ABC-123', deal: 'Klassisk massage 60 min', merchant: 'Aura Spa Goteborg', status: 'Aktiv', bought: '2026-04-15', expires: '2026-08-31', price: 449, color: '#2D5A3D' },
-  { code: 'VAL-DEF-456', deal: '3-ratters middag for tva', merchant: 'Restaurang Tvakanten', status: 'Anvand', bought: '2026-04-20', expires: '2026-07-20', price: 699, color: '#3D4A2D' },
-  { code: 'VAL-GHI-789', deal: 'Vinprovning for 2', merchant: 'Vinkallaren', status: 'Aktiv', bought: '2026-05-10', expires: '2026-09-10', price: 599, color: '#4A2D3A' },
-]
+const LG = '#E8E4DE'
 
 export default function KontoPage() {
-  const [tab, setTab] = useState('vouchers')
-  const [showVoucher, setShowVoucher] = useState(null)
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [vouchers, setVouchers] = useState<any[]>([])
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'vouchers' | 'orders' | 'settings'>('vouchers')
 
-  const tabS = (active) => ({
-    padding: '10px 20px', borderRadius: 8, border: 'none', cursor: 'pointer',
-    background: active ? G : 'transparent', color: active ? WH : GR,
-    fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: active ? 600 : 400
-  })
+  useEffect(() => {
+    loadData()
+  }, [])
 
-  if (showVoucher) {
-    const v = VOUCHERS.find(x => x.code === showVoucher)
+  async function loadData() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push('/logga-in')
+      return
+    }
+    setUser(user)
+
+    // Get profile
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+    setProfile(profileData)
+
+    // Get vouchers
+    const { data: voucherData } = await supabase
+      .from('vouchers')
+      .select('*, deals(title, image_url, deal_price, merchants(name, address, city))')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    setVouchers(voucherData || [])
+
+    // Get orders
+    const { data: orderData } = await supabase
+      .from('orders')
+      .select('*, deals(title, deal_price, image_url, merchants(name))')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    setOrders(orderData || [])
+
+    setLoading(false)
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
+
+  if (loading) {
     return (
-      <div style={{ background: IV, minHeight: '100vh', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div style={{ background: WH, borderRadius: 20, padding: 40, maxWidth: 420, width: '100%', boxShadow: '0 8px 40px rgba(0,0,0,0.12)', textAlign: 'center' }}>
-          <div style={{ width: 60, height: 60, background: G, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: AU, fontWeight: 700, fontSize: 24, margin: '0 auto 20px' }}>V</div>
-          <p style={{ color: AU, fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 8px' }}>VALOR VOUCHER</p>
-          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: G, margin: '0 0 4px' }}>{v.deal}</h2>
-          <p style={{ color: GR, fontSize: 14, margin: '0 0 28px' }}>{v.merchant}</p>
-          <div style={{ background: '#F0EDE8', borderRadius: 12, padding: '20px', marginBottom: 24 }}>
-            <div style={{ width: 120, height: 120, background: G, borderRadius: 12, margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: WH, fontSize: 11 }}>QR KOD</div>
-            <p style={{ fontFamily: 'monospace', fontSize: 20, fontWeight: 700, color: G, margin: '0 0 4px', letterSpacing: '0.1em' }}>{v.code}</p>
-            <p style={{ color: GR, fontSize: 12, margin: 0 }}>Visa for merchant vid besok</p>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ color: GR, fontSize: 13 }}>Kopt</span>
-            <span style={{ color: '#333', fontSize: 13, fontWeight: 500 }}>{v.bought}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-            <span style={{ color: GR, fontSize: 13 }}>Giltig till</span>
-            <span style={{ color: '#333', fontSize: 13, fontWeight: 500 }}>{v.expires}</span>
-          </div>
-          <button onClick={() => setShowVoucher(null)} style={{ width: '100%', padding: '14px', borderRadius: 10, background: G, color: WH, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 15 }}>Tillbaka till mina vouchers</button>
+      <div style={{ minHeight: '100vh', backgroundColor: IV, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ textAlign: 'center', color: GR }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>⟳</div>
+          <p>Laddar ditt konto...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div style={{ background: IV, minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
-      {/* NAV */}
-      <nav style={{ background: WH, borderBottom: '1px solid #E8E4DF', position: 'sticky', top: 0, zIndex: 50, padding: '0 24px' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
-          <Link href='/' style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div style={{ width: 36, height: 36, background: G, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: AU, fontWeight: 700, fontSize: 16 }}>V</div>
-            <span style={{ fontFamily: 'Georgia, serif', fontSize: 20, fontWeight: 700, color: G }}>Valor</span>
-          </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: G, display: 'flex', alignItems: 'center', justifyContent: 'center', color: AU, fontWeight: 700, fontSize: 14 }}>A</div>
-            <span style={{ fontSize: 14, color: '#333' }}>Anna Karlsson</span>
+    <div style={{ minHeight: '100vh', backgroundColor: IV, fontFamily: 'Inter, sans-serif' }}>
+      {/* Header */}
+      <div style={{ backgroundColor: G, padding: '40px 24px 30px' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <div style={{ fontSize: 11, letterSpacing: 4, color: AU, textTransform: 'uppercase', marginBottom: 8 }}>Mitt konto</div>
+            <h1 style={{ fontSize: 32, fontFamily: 'Georgia, serif', color: WH, fontWeight: 400, margin: 0 }}>
+              {profile?.full_name || user?.email?.split('@')[0] || 'Välkommen'}
+            </h1>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, margin: '8px 0 0' }}>{user?.email}</p>
+          </div>
+          <button onClick={handleLogout}
+            style={{ padding: '10px 20px', backgroundColor: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: WH, borderRadius: 8, cursor: 'pointer', fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+            Logga ut
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{ backgroundColor: WH, borderBottom: `1px solid ${LG}` }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '16px 24px', display: 'flex', gap: 40 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: G }}>{vouchers.length}</div>
+            <div style={{ fontSize: 12, color: GR }}>Vouchers</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: G }}>{orders.length}</div>
+            <div style={{ fontSize: 12, color: GR }}>Beställningar</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: G }}>
+              {orders.reduce((sum, o) => sum + (o.total_price || 0), 0)} kr
+            </div>
+            <div style={{ fontSize: 12, color: GR }}>Totalt sparat</div>
           </div>
         </div>
-      </nav>
+      </div>
 
+      {/* Tabs */}
+      <div style={{ backgroundColor: WH, borderBottom: `1px solid ${LG}`, position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 0 }}>
+          {([['vouchers', 'Mina Vouchers'], ['orders', 'Beställningar'], ['settings', 'Inställningar']] as const).map(([tab, label]) => (
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              style={{ padding: '16px 24px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, color: activeTab === tab ? G : GR, borderBottom: activeTab === tab ? `2px solid ${G}` : '2px solid transparent', fontFamily: 'Inter, sans-serif', fontWeight: activeTab === tab ? 600 : 400 }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px' }}>
-        {/* HEADER */}
-        <div style={{ marginBottom: 32 }}>
-          <p style={{ color: GR, fontSize: 14, margin: '0 0 4px' }}>Mitt konto</p>
-          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 32, color: G, margin: '0 0 24px' }}>Hej, Anna!</h1>
-
-          {/* STATS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
-            {[['3', 'Aktiva vouchers'], ['2', 'Anvanda vouchers'], ['548 kr', 'Sparat totalt']].map(([v, l], i) => (
-              <div key={i} style={{ background: WH, borderRadius: 12, padding: 20, textAlign: 'center', boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: G, marginBottom: 4 }}>{v}</div>
-                <div style={{ fontSize: 13, color: GR }}>{l}</div>
+        
+        {/* Vouchers Tab */}
+        {activeTab === 'vouchers' && (
+          <div>
+            {vouchers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: GR }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🎫</div>
+                <p style={{ margin: 0 }}>Inga vouchers än. <a href="/deals" style={{ color: G }}>Hitta deals →</a></p>
               </div>
-            ))}
-          </div>
-
-          {/* TABS */}
-          <div style={{ display: 'flex', gap: 4, background: WH, borderRadius: 10, padding: 4, width: 'fit-content', boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
-            {[['vouchers','Mina vouchers'],['profil','Min profil']].map(([k,l]) => (
-              <button key={k} onClick={() => setTab(k)} style={tabS(tab === k)}>{l}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* VOUCHERS TAB */}
-        {tab === 'vouchers' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {VOUCHERS.map(v => (
-              <div key={v.code} style={{ background: WH, borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', display: 'flex' }}>
-                <div style={{ width: 8, background: v.status === 'Aktiv' ? '#22C55E' : '#9CA3AF', flexShrink: 0 }} />
-                <div style={{ padding: '20px 24px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                  <div>
-                    <p style={{ color: AU, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 4px' }}>{v.merchant}</p>
-                    <h3 style={{ fontFamily: 'Georgia, serif', fontSize: 18, color: G, margin: '0 0 8px' }}>{v.deal}</h3>
-                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 12, color: GR }}>Kopt: {v.bought}</span>
-                      <span style={{ fontSize: 12, color: GR }}>Giltig till: {v.expires}</span>
-                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#555' }}>{v.code}</span>
+            ) : (
+              <div style={{ display: 'grid', gap: 16 }}>
+                {vouchers.map(v => (
+                  <div key={v.id} style={{ backgroundColor: WH, borderRadius: 12, padding: 24, border: `1px solid ${LG}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: AU, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>{v.deals?.merchants?.name}</div>
+                      <div style={{ fontSize: 16, color: G, fontFamily: 'Georgia, serif', marginBottom: 8 }}>{v.deals?.title}</div>
+                      <div style={{ fontSize: 13, color: GR }}>📍 {v.deals?.merchants?.address}, {v.deals?.merchants?.city}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: 3, color: G, fontFamily: 'monospace', marginBottom: 6 }}>{v.code}</div>
+                      <div style={{ display: 'inline-block', padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                        backgroundColor: v.status === 'active' ? '#ECFDF5' : v.status === 'used' ? '#F3F4F6' : '#FEF2F2',
+                        color: v.status === 'active' ? '#059669' : v.status === 'used' ? GR : '#DC2626' }}>
+                        {v.status === 'active' ? '✓ Aktiv' : v.status === 'used' ? '✗ Använd' : '⚠ Utgången'}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: v.status === 'Aktiv' ? '#F0FDF4' : '#F3F4F6', color: v.status === 'Aktiv' ? '#16A34A' : '#6B7280' }}>{v.status}</span>
-                    {v.status === 'Aktiv' && (
-                      <button onClick={() => setShowVoucher(v.code)} style={{ padding: '10px 20px', borderRadius: 8, background: G, color: WH, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Visa voucher</button>
-                    )}
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-            <div style={{ textAlign: 'center', padding: '32px 0' }}>
-              <Link href='/deals' style={{ padding: '14px 32px', borderRadius: 10, background: G, color: WH, textDecoration: 'none', fontSize: 15, fontWeight: 600 }}>Utforska fler deals</Link>
-            </div>
+            )}
           </div>
         )}
 
-        {/* PROFIL TAB */}
-        {tab === 'profil' && (
-          <div style={{ background: WH, borderRadius: 16, padding: 32, boxShadow: '0 2px 12px rgba(0,0,0,0.08)', maxWidth: 500 }}>
-            <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 20, color: G, margin: '0 0 24px' }}>Min profil</h2>
-            {[['Fornamn', 'Anna'], ['Efternamn', 'Karlsson'], ['E-post', 'anna.karlsson@gmail.com'], ['Telefon', '+46 70 123 45 67'], ['Stad', 'Stockholm']].map(([l, v]) => (
-              <div key={l} style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: GR, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{l}</label>
-                <div style={{ padding: '12px 16px', borderRadius: 8, border: '1px solid #E8E4DF', background: IV, fontSize: 14, color: '#333' }}>{v}</div>
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
+          <div>
+            {orders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: GR }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📦</div>
+                <p style={{ margin: 0 }}>Inga beställningar än.</p>
               </div>
-            ))}
-            <button style={{ width: '100%', padding: '14px', borderRadius: 10, background: G, color: WH, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 15, marginTop: 8 }}>Spara andringarna</button>
+            ) : (
+              <div style={{ display: 'grid', gap: 12 }}>
+                {orders.map(o => (
+                  <div key={o.id} style={{ backgroundColor: WH, borderRadius: 12, padding: 20, border: `1px solid ${LG}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 15, color: G, fontFamily: 'Georgia, serif', marginBottom: 4 }}>{o.deals?.title}</div>
+                      <div style={{ fontSize: 13, color: GR }}>
+                        {new Date(o.created_at).toLocaleDateString('sv-SE')} · Antal: {o.quantity}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: G }}>{o.total_price} kr</div>
+                      <div style={{ fontSize: 11, color: o.status === 'paid' ? '#059669' : GR, marginTop: 4 }}>
+                        {o.status === 'paid' ? '✓ Betald' : o.status === 'pending' ? '⏳ Väntar' : '✗ Avbruten'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div style={{ backgroundColor: WH, borderRadius: 12, padding: 32, border: `1px solid ${LG}`, maxWidth: 500 }}>
+            <h2 style={{ fontSize: 18, color: G, fontFamily: 'Georgia, serif', fontWeight: 400, margin: '0 0 24px' }}>Kontoinställningar</h2>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, color: G, marginBottom: 6, fontWeight: 500 }}>Namn</label>
+              <input type="text" defaultValue={profile?.full_name || ''}
+                style={{ width: '100%', padding: '12px 16px', border: `1px solid ${LG}`, borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 13, color: G, marginBottom: 6, fontWeight: 500 }}>E-post</label>
+              <input type="email" defaultValue={user?.email || ''} disabled
+                style={{ width: '100%', padding: '12px 16px', border: `1px solid ${LG}`, borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', backgroundColor: IV, boxSizing: 'border-box' }} />
+            </div>
+            <button style={{ padding: '12px 24px', backgroundColor: G, color: AU, border: 'none', borderRadius: 8, fontSize: 14, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
+              Spara ändringar
+            </button>
           </div>
         )}
       </div>
-
-      <footer style={{ background: G, color: 'rgba(255,255,255,0.6)', textAlign: 'center', padding: '24px', marginTop: 40, fontSize: 13 }}>
-        <p style={{ margin: 0 }}>2026 Valor AB · Mitt konto</p>
-      </footer>
     </div>
   )
 }
