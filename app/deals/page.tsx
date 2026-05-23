@@ -1,124 +1,185 @@
 'use client'
-import { useState } from 'react'
-import Link from 'next/link'
+
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 const G = '#1A3A2A'
 const AU = '#C4974A'
 const IV = '#F5F2ED'
 const WH = '#FFFFFF'
 const GR = '#6B7280'
+const LG = '#E8E4DE'
 
-const DEALS = [
-  { id: 'massage-fotvard', title: 'Massage 60 min + fotvard', merchant: 'Aura Spa & Wellness', city: 'Stockholm', category: 'Skonhet', price: 549, original: 1099, discount: 50, rating: 4.9, reviews: 142, color: '#2D5A3D', featured: true },
-  { id: 'middag-tvakanten', title: '3-ratters middag for tva', merchant: 'Restaurang Tvakanten', city: 'Goteborg', category: 'Mat & Dryck', price: 699, original: 1398, discount: 50, rating: 4.7, reviews: 89, color: '#3D4A2D', featured: false },
-  { id: 'yoga-retreat', title: 'Yoga retreat helg', merchant: 'Inner Peace Studio', city: 'Goteborg', category: 'Halsa', price: 1299, original: 2199, discount: 41, rating: 4.8, reviews: 34, color: '#2D3A4A', featured: true },
-  { id: 'tesla-service', title: 'Tesla-service komplett', merchant: 'AutoPremium Sverige', city: 'Stockholm', category: 'Bil & Service', price: 1799, original: 2899, discount: 38, rating: 4.6, reviews: 67, color: '#3A2D1A', featured: false },
-  { id: 'vinprovning', title: 'Vinprovning for 2', merchant: 'Vinkallaren', city: 'Malmo', category: 'Mat & Dryck', price: 599, original: 1099, discount: 45, rating: 4.9, reviews: 201, color: '#4A2D3A', featured: false },
-  { id: 'golf-lunch', title: 'Golf 18 hal + lunch', merchant: 'Barseback Golf', city: 'Malmo', category: 'Sport', price: 895, original: 1650, discount: 46, rating: 4.5, reviews: 58, color: '#2D4A2D', featured: true },
-  { id: 'padel', title: 'Padel 2h + utrustning', merchant: 'PadelCity Stockholm', city: 'Stockholm', category: 'Sport', price: 395, original: 799, discount: 51, rating: 4.8, reviews: 312, color: '#1A2D4A', featured: false },
-  { id: 'hotell-frukost', title: 'Hotellnatt + frukost', merchant: 'Clarion Hotel Post', city: 'Goteborg', category: 'Resa & Boende', price: 1195, original: 2100, discount: 43, rating: 4.7, reviews: 76, color: '#2D1A3A', featured: false },
-]
+type Deal = {
+  id: string
+  title: string
+  slug: string
+  description: string
+  original_price: number
+  deal_price: number
+  discount_pct: number
+  image_url: string | null
+  category: string
+  city: string
+  valid_until: string | null
+  status: string
+  sold_count: number
+  merchants?: {
+    name: string
+    slug: string
+    address: string
+    city: string
+    logo_url: string | null
+  }
+}
 
-const CATS = ['Alla', 'Skonhet', 'Mat & Dryck', 'Sport', 'Halsa', 'Upplevelse', 'Resa & Boende', 'Bil & Service']
-const CITIES = ['Alla stader', 'Stockholm', 'Goteborg', 'Malmo']
+const CATEGORIES = ['Alla kategorier', 'Restaurang', 'Spa & Wellness', 'Skönhet', 'Aktiviteter', 'Shopping', 'Upplevelser']
+const CITIES = ['Alla städer', 'Stockholm', 'Göteborg', 'Malmö', 'Uppsala', 'Västerås']
 
 export default function DealsPage() {
-  const [cat, setCat] = useState('Alla')
-  const [city, setCity] = useState('Alla stader')
-  const [sort, setSort] = useState('featured')
+  const [deals, setDeals] = useState<Deal[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('Alla kategorier')
+  const [selectedCity, setSelectedCity] = useState('Alla städer')
+  const [sortBy, setSortBy] = useState('newest')
 
-  const filtered = DEALS
-    .filter(d => (cat === 'Alla' || d.category === cat) && (city === 'Alla stader' || d.city === city))
+  useEffect(() => {
+    fetchDeals()
+  }, [])
+
+  async function fetchDeals() {
+    setLoading(true)
+    let query = supabase
+      .from('deals')
+      .select('*, merchants(name, slug, address, city, logo_url)')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+
+    const { data, error } = await query
+    if (error) {
+      console.error('Error fetching deals:', error)
+    } else {
+      setDeals(data || [])
+    }
+    setLoading(false)
+  }
+
+  const filtered = deals
+    .filter(d => {
+      const matchSearch = !search || d.title.toLowerCase().includes(search.toLowerCase()) || (d.merchants?.name || '').toLowerCase().includes(search.toLowerCase())
+      const matchCat = selectedCategory === 'Alla kategorier' || d.category === selectedCategory
+      const matchCity = selectedCity === 'Alla städer' || d.city === selectedCity
+      return matchSearch && matchCat && matchCity
+    })
     .sort((a, b) => {
-      if (sort === 'featured') return (b.featured ? 1 : 0) - (a.featured ? 1 : 0)
-      if (sort === 'price-low') return a.price - b.price
-      if (sort === 'price-high') return b.price - a.price
-      if (sort === 'discount') return b.discount - a.discount
+      if (sortBy === 'price_asc') return a.deal_price - b.deal_price
+      if (sortBy === 'price_desc') return b.deal_price - a.deal_price
+      if (sortBy === 'discount') return b.discount_pct - a.discount_pct
       return 0
     })
 
-  function btnS(active) {
-    return { padding: '8px 18px', borderRadius: 999, border: active ? 'none' : '1px solid #ddd', background: active ? G : WH, color: active ? WH : '#444', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: active ? 600 : 400 }
-  }
-
   return (
-    <div style={{ background: IV, minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
-      <nav style={{ background: WH, borderBottom: '1px solid #E8E4DF', position: 'sticky', top: 0, zIndex: 50, padding: '0 24px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
-          <Link href='/' style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div style={{ width: 36, height: 36, background: G, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: AU, fontWeight: 700, fontSize: 16 }}>V</div>
-            <span style={{ fontFamily: 'Georgia, serif', fontSize: 20, fontWeight: 700, color: G }}>Valor</span>
-          </Link>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Link href='/logga-in' style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #ddd', background: WH, color: '#333', textDecoration: 'none', fontSize: 14 }}>Logga in</Link>
-            <Link href='/registrera' style={{ padding: '10px 20px', borderRadius: 8, background: G, color: WH, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>Bli medlem</Link>
-          </div>
-        </div>
-      </nav>
-      <div style={{ background: G, padding: '48px 24px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <p style={{ color: AU, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, fontWeight: 600 }}>KURERADE ERBJUDANDEN</p>
-          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(32px,5vw,52px)', color: WH, margin: '0 0 12px', lineHeight: 1.1 }}>Utforska deals</h1>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, margin: 0 }}>{filtered.length} erbjudanden hittades</p>
+    <div style={{ minHeight: '100vh', backgroundColor: IV, fontFamily: 'Inter, sans-serif' }}>
+      {/* Hero */}
+      <div style={{ backgroundColor: G, padding: '60px 24px 40px', textAlign: 'center' }}>
+        <div style={{ fontSize: 11, letterSpacing: 4, color: AU, textTransform: 'uppercase', marginBottom: 12 }}>Exklusiva erbjudanden</div>
+        <h1 style={{ fontSize: 42, fontFamily: 'Georgia, serif', color: WH, fontWeight: 400, margin: '0 0 16px' }}>Dagens deals</h1>
+        <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 16, margin: '0 auto', maxWidth: 500 }}>
+          Handplockade erbjudanden från Stockholms bästa restauranger, spaanläggningar och butiker
+        </p>
+      </div>
+
+      {/* Filters */}
+      <div style={{ backgroundColor: WH, borderBottom: `1px solid ${LG}`, padding: '20px 24px', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Sök deals eller restauranger..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ flex: '1 1 240px', padding: '10px 16px', border: `1px solid ${LG}`, borderRadius: 6, fontSize: 14, outline: 'none', fontFamily: 'Inter, sans-serif' }}
+          />
+          <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}
+            style={{ padding: '10px 16px', border: `1px solid ${LG}`, borderRadius: 6, fontSize: 14, backgroundColor: WH, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+            {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+          </select>
+          <select value={selectedCity} onChange={e => setSelectedCity(e.target.value)}
+            style={{ padding: '10px 16px', border: `1px solid ${LG}`, borderRadius: 6, fontSize: 14, backgroundColor: WH, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+            {CITIES.map(c => <option key={c}>{c}</option>)}
+          </select>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+            style={{ padding: '10px 16px', border: `1px solid ${LG}`, borderRadius: 6, fontSize: 14, backgroundColor: WH, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+            <option value="newest">Nyast</option>
+            <option value="price_asc">Lägst pris</option>
+            <option value="price_desc">Högst pris</option>
+            <option value="discount">Högst rabatt</option>
+          </select>
+          <span style={{ color: GR, fontSize: 13 }}>{filtered.length} deals</span>
         </div>
       </div>
-      <div style={{ background: WH, borderBottom: '1px solid #E8E4DF', padding: '16px 24px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            {CITIES.map(c => (<button key={c} onClick={() => setCity(c)} style={btnS(city === c)}>{c}</button>))}
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {CATS.map(c => (<button key={c} onClick={() => setCat(c)} style={btnS(cat === c)}>{c}</button>))}
-            </div>
-            <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #ddd', background: WH, fontFamily: 'Inter, sans-serif', fontSize: 14, cursor: 'pointer', color: '#333' }}>
-              <option value='featured'>Rekommenderade</option>
-              <option value='price-low'>Pris: Lagst forst</option>
-              <option value='price-high'>Pris: Hogst forst</option>
-              <option value='discount'>Storsta rabatt</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
-        {filtered.length === 0 ? (
+
+      {/* Grid */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
+        {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: GR }}>
-            <h3 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: G, marginBottom: 8 }}>Inga deals hittades</h3>
-            <p>Prova att andra dina filter</p>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>⟳</div>
+            <p>Laddar deals...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 0', color: GR }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>✦</div>
+            <p>Inga deals matchar dina filter</p>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
             {filtered.map(deal => (
-              <Link key={deal.id} href={'/deals/' + deal.id} style={{ textDecoration: 'none' }}>
-                <div style={{ background: WH, borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', cursor: 'pointer' }}>
-                  <div style={{ height: 200, background: deal.color, position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 16 }}>
-                    <span style={{ position: 'absolute', top: 16, left: 16, background: AU, color: WH, borderRadius: 999, padding: '4px 12px', fontSize: 13, fontWeight: 700 }}>-{deal.discount}%</span>
-                    {deal.featured && <span style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.15)', color: WH, borderRadius: 999, padding: '4px 12px', fontSize: 11, fontWeight: 600 }}>UTVALT</span>}
-                    <span style={{ background: 'rgba(0,0,0,0.4)', color: WH, borderRadius: 999, padding: '4px 12px', fontSize: 12 }}>{deal.category}</span>
-                  </div>
-                  <div style={{ padding: 20 }}>
-                    <p style={{ color: AU, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px' }}>{deal.merchant} · {deal.city}</p>
-                    <h3 style={{ fontFamily: 'Georgia, serif', fontSize: 18, color: G, margin: '0 0 12px', lineHeight: 1.3 }}>{deal.title}</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div>
-                        <span style={{ fontSize: 22, fontWeight: 700, color: G }}>{deal.price.toLocaleString('sv-SE')} kr</span>
-                        <span style={{ fontSize: 14, color: GR, textDecoration: 'line-through', marginLeft: 8 }}>{deal.original.toLocaleString('sv-SE')} kr</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: GR, fontSize: 13 }}>
-                        <span style={{ color: '#F59E0B' }}>&#9733;</span>
-                        <span>{deal.rating} ({deal.reviews})</span>
-                      </div>
+              <a key={deal.id} href={`/deals/${deal.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+                <div style={{ backgroundColor: WH, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 8px rgba(0,0,0,0.06)' }}>
+                  {/* Image */}
+                  <div style={{ height: 200, backgroundColor: G, position: 'relative', overflow: 'hidden' }}>
+                    {deal.image_url ? (
+                      <img src={deal.image_url} alt={deal.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, opacity: 0.4, color: WH }}>✦</div>
+                    )}
+                    <div style={{ position: 'absolute', top: 12, right: 12, backgroundColor: AU, color: WH, padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                      -{deal.discount_pct}%
+                    </div>
+                    <div style={{ position: 'absolute', top: 12, left: 12, backgroundColor: 'rgba(0,0,0,0.5)', color: WH, padding: '4px 10px', borderRadius: 20, fontSize: 11 }}>
+                      {deal.category}
                     </div>
                   </div>
+                  {/* Content */}
+                  <div style={{ padding: '20px' }}>
+                    {deal.merchants && (
+                      <div style={{ fontSize: 11, color: AU, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>
+                        {deal.merchants.name}
+                      </div>
+                    )}
+                    <h3 style={{ fontSize: 17, color: G, fontFamily: 'Georgia, serif', fontWeight: 400, margin: '0 0 8px', lineHeight: 1.4 }}>{deal.title}</h3>
+                    <p style={{ fontSize: 13, color: GR, margin: '0 0 16px', lineHeight: 1.5 }}>{deal.description?.substring(0, 80)}...</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <span style={{ fontSize: 22, fontWeight: 700, color: G }}>{deal.deal_price} kr</span>
+                        <span style={{ fontSize: 13, color: GR, textDecoration: 'line-through', marginLeft: 8 }}>{deal.original_price} kr</span>
+                      </div>
+                      <div style={{ backgroundColor: G, color: AU, padding: '8px 16px', borderRadius: 6, fontSize: 13, fontWeight: 500 }}>
+                        Köp nu
+                      </div>
+                    </div>
+                    {deal.merchants && (
+                      <div style={{ marginTop: 12, fontSize: 12, color: GR }}>📍 {deal.merchants.city}</div>
+                    )}
+                  </div>
                 </div>
-              </Link>
+              </a>
             ))}
           </div>
         )}
       </div>
-      <footer style={{ background: G, color: 'rgba(255,255,255,0.6)', textAlign: 'center', padding: '32px 24px', marginTop: 40, fontSize: 14 }}>
-        <p style={{ margin: 0 }}>2026 Valor AB · Premium deals i din stad</p>
-      </footer>
     </div>
   )
 }
