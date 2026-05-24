@@ -3,109 +3,78 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 // ============================================================
 // VALÖR SECURITY MIDDLEWARE - Production Grade
-// Rate limiting, RBAC, bot detection, audit logging
+// Rate limiting, RBAC, bot detection, injection protection
 // ============================================================
 
-// In-memory rate limit store (per Vercel Edge function instance)
-// For production scale: use Upstash Redis
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+// Simple in-memory rate limiter (per edge function instance)
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
 
-function getRateLimitKey(ip: string, route: string): string {
-  return ip + ':' + route
-}
-
-function checkRateLimit(ip: string, route: string, limit: number, windowMs: number): boolean {
-  const key = getRateLimitKey(ip, route)
+function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now()
-  const entry = rateLimitMap.get(key)
-
+  const entry = rateLimitStore.get(key)
   if (!entry || entry.resetAt < now) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs })
-    return true // allowed
+    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs })
+    return true
   }
-
-  if (entry.count >= limit) {
-    return false // rate limited
-  }
-
+  if (entry.count >= limit) return false
   entry.count++
-  return true // allowed
+  return true
 }
 
-// Known bad bot signatures
-const BOT_SIGNATURES = [
-  'sqlmap', 'nikto', 'nmap', 'masscan', 'zgrab',
-  'python-requests/2.', 'go-http-client', 'curl/7',
-  'scrapy', 'wget/', 'libwww-perl',
-]
+const BLOCKED_BOTS = ['sqlmap', 'nikto', 'masscan', 'zgrab', 'python-requests/2.']
 
-function isMaliciousBot(userAgent: string): boolean {
-  const ua = userAgent.toLowerCase()
-  return BOT_SIGNATURES.some(sig => ua.includes(sig))
+function isBadBot(ua: string): boolean {
+  const lower = ua.toLowerCase()
+  return BLOCKED_BOTS.some(b => lower.includes(b))
 }
 
-// Path traversal / injection detection
-function hasInjectionPatterns(url: string): boolean {
-  const decoded = decodeURIComponent(url).toLowerCase()
-  const patterns = [
-    '../', '..\\', '%2e%2e', 
-    '<script', 'javascript:', 'vbscript:',
-    'union select', 'drop table', 'insert into',
-    'eval(', 'exec(',
-    '/etc/passwd', '/etc/shadow',
-  ]
-  return patterns.some(p => decoded.includes(p))
+function hasInjection(url: string): boolean {
+  try {
+    const decoded = decodeURIComponent(url).toLowerCase()
+    return ['../','<script','javascript:','union select','eval(','/etc/passwd'].some(p => decoded.includes(p))
+  } catch {
+    return false
+  }
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
-             request.headers.get('x-real-ip') || 
-             '127.0.0.1'
-  const userAgent = request.headers.get('user-agent') || ''
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
+  const ua = request.headers.get('user-agent') || ''
 
-  // ── 1. BLOCK MALICIOUS BOTS ──────────────────────────────
-  if (isMaliciousBot(userAgent)) {
+  // 1. Block malicious bots
+  if (isBadBot(ua)) {
     return new NextResponse('Forbidden', { status: 403 })
   }
 
-  // ── 2. PATH INJECTION PROTECTION ────────────────────────
-  if (hasInjectionPatterns(request.url)) {
+  // 2. Block injection attempts
+  if (hasInjection(request.url)) {
     return new NextResponse('Bad Request', { status: 400 })
   }
 
-  // ── 3. RATE LIMITING ─────────────────────────────────────
-  // API routes: 30 req/min
+  // 3. Rate limiting
   if (pathname.startsWith('/api/')) {
-    const allowed = checkRateLimit(ip, 'api', 30, 60_000)
-    if (!allowed) {
+    if (!checkRateLimit(ip + ':api', 30, 60_000)) {
       return new NextResponse(
-        JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+        JSON.stringify({ error: 'Too many requests' }),
         { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60' } }
       )
     }
   }
 
-  // Login/register: 10 attempts/15min (brute force protection)
-  if (pathname.startsWith('/logga-in') || pathname.startsWith('/registrera')) {
-    const allowed = checkRateLimit(ip, 'auth', 10, 900_000)
-    if (!allowed) {
-      return new NextResponse(
-        'Too many login attempts. Please wait 15 minutes.',
-        { status: 429 }
-      )
+  if (pathname === '/logga-in' || pathname === '/registrera') {
+    if (!checkRateLimit(ip + ':auth', 10, 900_000)) {
+      return new NextResponse('Too many login attempts. Wait 15 minutes.', { status: 429 })
     }
   }
 
-  // Admin: 60 req/min (extra protection)
   if (pathname.startsWith('/admin')) {
-    const allowed = checkRateLimit(ip, 'admin', 60, 60_000)
-    if (!allowed) {
+    if (!checkRateLimit(ip + ':admin', 60, 60_000)) {
       return new NextResponse('Rate limited', { status: 429 })
     }
   }
 
-  // ── 4. SUPABASE AUTH SESSION ─────────────────────────────
+  // 4. Setup Supabase session
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -125,53 +94,39 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: Always use getUser() not getSession() - getUser() validates server-side
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  // ── 5. ROUTE PROTECTION (RBAC) ───────────────────────────
+  // 5. RBAC Route Protection
 
-  // /admin - ADMIN ONLY
+  // /admin - admin role only
   if (pathname.startsWith('/admin')) {
-    if (!user || authError) {
-      const loginUrl = new URL('/logga-in', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
+    if (!user) {
+      const url = new URL('/logga-in', request.url)
+      url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
     }
-
     const { data: profile } = await supabase
       .from('profiles')
       .select('role, is_banned')
       .eq('id', user.id)
       .single()
 
-    // Block banned users immediately
     if (profile?.is_banned) {
-      await supabase.auth.signOut()
       return NextResponse.redirect(new URL('/', request.url))
     }
-
     if (profile?.role !== 'admin') {
-      // Log unauthorized admin access attempt
-      console.warn('[SECURITY] Unauthorized admin access attempt:', {
-        userId: user.id,
-        email: user.email,
-        ip,
-        pathname,
-        timestamp: new Date().toISOString(),
-      })
+      console.warn('[SEC] Unauthorized admin access:', user.email, 'from', ip)
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
-  // /konto - AUTHENTICATED USERS ONLY
+  // /konto - must be logged in
   if (pathname.startsWith('/konto')) {
-    if (!user || authError) {
-      const loginUrl = new URL('/logga-in', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
+    if (!user) {
+      const url = new URL('/logga-in', request.url)
+      url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
     }
-
-    // Check if banned
     const { data: profile } = await supabase
       .from('profiles')
       .select('is_banned')
@@ -179,37 +134,30 @@ export async function middleware(request: NextRequest) {
       .single()
 
     if (profile?.is_banned) {
-      await supabase.auth.signOut()
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
-  // /merchant/dashboard and /merchant/settings - MERCHANT OR ADMIN ONLY
-  if (pathname.match(/^/merchant/(dashboard|settings)/)) {
-    if (!user || authError) {
-      const loginUrl = new URL('/logga-in', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
+  // /merchant/dashboard + /merchant/settings - merchant or admin only
+  if (pathname.match(/^\/merchant\/(dashboard|settings)/)) {
+    if (!user) {
+      const url = new URL('/logga-in', request.url)
+      url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
     }
-
     const { data: profile } = await supabase
       .from('profiles')
       .select('role, is_banned')
       .eq('id', user.id)
       .single()
 
-    if (profile?.is_banned) {
-      await supabase.auth.signOut()
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-
+    if (profile?.is_banned) return NextResponse.redirect(new URL('/', request.url))
     if (!profile || !['merchant', 'admin'].includes(profile.role)) {
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
-  // ── 6. SECURITY RESPONSE HEADERS ────────────────────────
-  supabaseResponse.headers.set('X-Request-ID', crypto.randomUUID())
+  // 6. Add security headers to response
   supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff')
   supabaseResponse.headers.set('X-Frame-Options', 'DENY')
 
@@ -225,7 +173,5 @@ export const config = {
     '/api/:path*',
     '/logga-in',
     '/registrera',
-    // Exclude static files and images
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
