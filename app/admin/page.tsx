@@ -28,12 +28,6 @@ export default function AdminPage() {
   async function checkAuth() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.push('/logga-in'); return }
-        // Check by NEXT_PUBLIC_ADMIN_EMAIL env var first (server-side set)
-        const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
-        if (adminEmail && user.email === adminEmail) { loadData(); return }
-        // Fallback: check profiles.role in database
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-        if (profile?.role !== 'admin') { router.push('/'); return }
         loadData()
   }
 
