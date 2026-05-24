@@ -1,19 +1,15 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
-// createBrowserClient stores sessions in cookies (not just localStorage)
-// This allows the Next.js middleware to read the session server-side
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _client: any = null
+let _supabase: ReturnType<typeof createClient> | null = null
 
 export function getSupabase() {
-      if (!_client) {
-              _client = createBrowserClient(
-                        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-                      )
-      }
-      return _client
+        if (!_supabase) {
+                  _supabase = createClient(supabaseUrl, supabaseAnonKey)
+        }
+        return _supabase
 }
 
 export const supabase = getSupabase()
