@@ -250,7 +250,7 @@ export default function HomePage() {
             </div>
             <div>
               <div style={{ fontWeight: 700, color: C.white, marginBottom: 16, fontSize: 14 }}>Företag</div>
-              {[['/merchant','Bli merchant'],['/admin','Admin'],['/konto','Mitt konto']].map(([h,l]) => <div key={h} style={{ marginBottom: 8 }}><Link href={h} style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: 13 }}>{l}</Link></div>)}
+              {[['/merchant','Bli merchant'],['/konto','Mitt konto']].map(([h,l]) => <div key={h} style={{ marginBottom: 8 }}><Link href={h} style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: 13 }}>{l}</Link></div>)}
             </div>
           </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 12 }}>
