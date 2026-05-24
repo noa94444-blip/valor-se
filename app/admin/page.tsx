@@ -1,476 +1,350 @@
 'use client'
 // @ts-nocheck
-
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
-const G = '#1A3A2A'
-const AU = '#C4974A'
-const IV = '#F5F2ED'
-const WH = '#FFFFFF'
-const GR = '#6B7280'
-const LG = '#E8E4DE'
-const RE = '#DC2626'
-const GN = '#059669'
-const BL = '#2563EB'
-
-type Tab = 'overview' | 'orders' | 'vouchers' | 'merchants' | 'deals' | 'payouts' | 'transactions'
-
 export default function AdminPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<Tab>('overview')
-  const [stats, setStats] = useState({ deals: 0, merchants: 0, orders: 0, vouchers: 0, revenue: 0 })
-  const [orders, setOrders] = useState<any[]>([])
-  const [vouchers, setVouchers] = useState<any[]>([])
-  const [merchants, setMerchants] = useState<any[]>([])
-  const [deals, setDeals] = useState<any[]>([])
-  
-  // Payout state
-  const [payouts, setPayouts] = useState<any[]>([])
-  const [transactions, setTransactions] = useState<any[]>([])
-  const [merchantBalances, setMerchantBalances] = useState<any[]>([])
-  const [payoutFilter, setPayoutFilter] = useState<'all' | 'pending' | 'available' | 'paid'>('all')
-  const [payoutMsg, setPayoutMsg] = useState('')
+    const router = useRouter()
+    const [loading, setLoading] = useState(true)
+    const [tab, setTab] = useState('overview')
+    const [orders, setOrders] = useState([])
+    const [vouchers, setVouchers] = useState([])
+    const [merchants, setMerchants] = useState([])
+    const [deals, setDeals] = useState([])
+    const [payouts, setPayouts] = useState([])
+    const [transactions, setTransactions] = useState([])
+    const [stats, setStats] = useState({ orders: 0, revenue: 0, merchants: 0, deals: 0 })
 
-  useEffect(() => { checkAuth() }, [])
+  useEffect(() => {
+        checkAuth()
+  }, [])
 
   async function checkAuth() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/logga-in'); return }
-    loadData()
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+                router.push('/logga-in?redirect=/admin')
+                return
+        }
+        setLoading(false)
+        loadData()
   }
 
   async function loadData() {
-    setLoading(false)
-    const [
-      { count: dealCount },
-      { count: merchantCount },
-      { data: ordersData },
-      { data: vouchersData },
-      { data: merchantsData },
-      { data: dealsData },
-      { data: payoutsData },
-      { data: transactionsData },
-    ] = await Promise.all([
-      supabase.from('deals').select('*', { count: 'exact', head: true }),
-      supabase.from('merchants').select('*', { count: 'exact', head: true }),
-      supabase.from('orders').select('*, deals(title, price, merchant_id, merchants(business_name)), profiles(email, full_name)').order('created_at', { ascending: false }).limit(100),
-      supabase.from('vouchers').select('*, orders(*, deals(title, merchants(business_name)), profiles(email))').order('created_at', { ascending: false }).limit(100),
-      supabase.from('merchants').select('*').order('created_at', { ascending: false }),
-      supabase.from('deals').select('*, merchants(business_name)').order('created_at', { ascending: false }),
-      supabase.from('payouts').select('*, merchants(business_name, id)').order('created_at', { ascending: false }),
-      supabase.from('transactions').select('*, merchants(business_name), profiles(email)').order('created_at', { ascending: false }).limit(200),
-    ])
-
-    const totalRevenue = ordersData?.filter(o => o.status === 'completed').reduce((s, o) => s + (o.amount || 0), 0) || 0
-    setStats({ deals: dealCount || 0, merchants: merchantCount || 0, orders: ordersData?.length || 0, vouchers: vouchersData?.length || 0, revenue: totalRevenue })
-    setOrders(ordersData || [])
-    setVouchers(vouchersData || [])
-    setMerchants(merchantsData || [])
-    setDeals(dealsData || [])
-    setPayouts(payoutsData || [])
-    setTransactions(transactionsData || [])
-
-    // Calculate merchant balances from orders
-    const balanceMap: Record<string, any> = {}
-    ordersData?.filter(o => o.status === 'completed').forEach(o => {
-      const mId = o.deals?.merchant_id
-      const mName = o.deals?.merchants?.business_name || 'Okänd'
-      if (!mId) return
-      if (!balanceMap[mId]) balanceMap[mId] = { merchant_id: mId, business_name: mName, gross: 0, commission: 0, net: 0, unpaid_orders: 0 }
-      const gross = o.amount || 0
-      const commission = gross * 0.15
-      const net = gross - commission
-      balanceMap[mId].gross += gross
-      balanceMap[mId].commission += commission
-      balanceMap[mId].net += net
-      if (!o.payout_id) balanceMap[mId].unpaid_orders++
-    })
-    setMerchantBalances(Object.values(balanceMap))
+        const [o, v, m, d, p, t] = await Promise.all([
+                supabase.from('orders').select('*').order('created_at', { ascending: false }),
+                supabase.from('vouchers').select('*').order('created_at', { ascending: false }),
+                supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+                supabase.from('deals').select('*').order('created_at', { ascending: false }),
+                supabase.from('payouts').select('*').order('created_at', { ascending: false }),
+                supabase.from('transactions').select('*').order('created_at', { ascending: false }),
+              ])
+        if (o.data) setOrders(o.data)
+        if (v.data) setVouchers(v.data)
+        if (m.data) setMerchants(m.data)
+        if (d.data) setDeals(d.data)
+        if (p.data) setPayouts(p.data)
+        if (t.data) setTransactions(t.data)
+        setStats({
+                orders: o.data?.length || 0,
+                revenue: o.data?.reduce((s, x) => s + (x.amount || 0), 0) || 0,
+                merchants: m.data?.length || 0,
+                deals: d.data?.length || 0,
+        })
   }
 
-  async function approvePayout(payoutId: string) {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from('payouts').update({
-      status: 'paid',
-      paid_at: new Date().toISOString(),
-      approved_by: user?.id,
-      approved_at: new Date().toISOString(),
-    }).eq('id', payoutId)
-    if (!error) { setPayoutMsg('Utbetalning markerad som betald!'); loadData() }
-    else setPayoutMsg('Fel: ' + error.message)
+  async function markPayoutPaid(id) {
+        await supabase.from('payouts').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', id)
+        loadData()
   }
 
-  async function createPayout(merchantId: string, amount: number, orderCount: number) {
-    const gross = amount / 0.85
-    const commission = gross * 0.15
-    const { error } = await supabase.from('payouts').insert({
-      merchant_id: merchantId,
-      amount: amount,
-      gross_amount: gross,
-      commission_amount: commission,
-      net_amount: amount,
-      commission_rate: 0.15,
-      order_count: orderCount,
-      status: 'pending',
-      currency: 'SEK',
-    })
-    if (!error) { setPayoutMsg('Utbetalning skapad!'); loadData() }
-    else setPayoutMsg('Fel: ' + error.message)
+  function exportCSV(data, filename) {
+        if (!data || !data.length) return
+        const keys = Object.keys(data[0])
+        const rows = data.map(row => keys.map(k => JSON.stringify(row[k] ?? '')).join(','))
+        const csv = [keys.join(','), ...rows].join('\n')
+        const blob = new Blob([csv], { type: 'text/csv' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
   }
 
-  function exportCSV(data: any[], filename: string) {
-    if (!data.length) return
-    const keys = Object.keys(data[0])
-    const csv = [keys.join(','), ...data.map(row => keys.map(k => JSON.stringify(row[k] ?? '')).join(','))].join('
-')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = filename + '_' + new Date().toISOString().slice(0,10) + '.csv'
-    a.click(); URL.revokeObjectURL(url)
-  }
-
-  function fmtSEK(n: number) { return new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(n || 0) }
-  function fmtDate(d: string) { return d ? new Date(d).toLocaleDateString('sv-SE', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '–' }
-
-  const filteredPayouts = payouts.filter(p => {
-    if (payoutFilter === 'pending') return p.status === 'pending'
-    if (payoutFilter === 'available') return p.status === 'processing'
-    if (payoutFilter === 'paid') return p.status === 'paid'
-    return true
-  })
-
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'overview', label: 'Översikt' },
-    { id: 'payouts', label: '💰 Utbetalningar' },
-    { id: 'transactions', label: '📊 Transaktioner' },
-    { id: 'orders', label: 'Ordrar' },
-    { id: 'vouchers', label: 'Vouchers' },
-    { id: 'merchants', label: 'Merchants' },
-    { id: 'deals', label: 'Deals' },
-  ]
-
-  const card = (label: string, value: string | number, color = G, sub?: string) => (
-    <div style={{ background: WH, borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: `1px solid ${LG}` }}>
-      <div style={{ fontSize: 12, color: GR, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, color, marginTop: 4 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: GR, marginTop: 2 }}>{sub}</div>}
-    </div>
-  )
-
-  const badge = (status: string) => {
-    const cfg: Record<string, { bg: string; color: string }> = {
-      pending: { bg: '#FEF3C7', color: '#92400E' },
-      processing: { bg: '#DBEAFE', color: '#1E40AF' },
-      paid: { bg: '#D1FAE5', color: '#065F46' },
-      failed: { bg: '#FEE2E2', color: '#991B1B' },
-      completed: { bg: '#D1FAE5', color: '#065F46' },
-      refunded: { bg: '#FEE2E2', color: '#991B1B' },
-      active: { bg: '#D1FAE5', color: '#065F46' },
-      used: { bg: '#E0E7FF', color: '#3730A3' },
-      expired: { bg: '#F3F4F6', color: '#6B7280' },
+  const tabs = ['overview', 'payouts', 'transactions', 'orders', 'vouchers', 'merchants', 'deals']
+    const tabLabels = {
+          overview: '📊 Översikt',
+          payouts: '💰 Utbetalningar',
+          transactions: '📋 Transaktioner',
+          orders: '🛍️ Ordrar',
+          vouchers: '🎫 Vouchers',
+          merchants: '🏪 Merchants',
+          deals: '🎯 Deals',
     }
-    const c = cfg[status] || { bg: '#F3F4F6', color: '#6B7280' }
-    return <span style={{ background: c.bg, color: c.color, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>{status}</span>
+
+  if (loading) {
+        return (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0f0f0f', color: '#fff' }}>
+                          <div>Laddar admin...</div>div>
+                </div>div>
+              )
   }
-
-  const th = (label: string) => <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: GR, textTransform: 'uppercase', letterSpacing: 0.5, background: '#F9FAFB', borderBottom: `1px solid ${LG}` }}>{label}</th>
-  const td = (content: any, right = false) => <td style={{ padding: '12px 14px', fontSize: 13, color: G, borderBottom: `1px solid ${LG}`, textAlign: right ? 'right' : 'left' }}>{content}</td>
-
-  if (loading) return <div style={{ minHeight: '100vh', background: IV, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ color: G, fontSize: 16 }}>Laddar...</div></div>
-
-  return (
-    <div style={{ minHeight: '100vh', background: '#F3F4F6', fontFamily: 'system-ui, sans-serif' }}>
-      {/* Header */}
-      <div style={{ background: G, padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <span style={{ color: WH, fontWeight: 800, fontSize: 18, letterSpacing: 2 }}>VALÖR</span>
-          <span style={{ color: AU, fontSize: 11, fontWeight: 600, letterSpacing: 1 }}>ADMIN</span>
-        </div>
-        <button onClick={() => { supabase.auth.signOut(); router.push('/logga-in') }} style={{ color: '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>Logga ut</button>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ background: WH, borderBottom: `1px solid ${LG}`, padding: '0 32px', display: 'flex', gap: 4, overflowX: 'auto' }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ padding: '14px 16px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: activeTab === t.id ? G : GR, borderBottom: activeTab === t.id ? `3px solid ${AU}` : '3px solid transparent', whiteSpace: 'nowrap' }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
-
-        {/* ─── OVERVIEW ─── */}
-        {activeTab === 'overview' && (
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: G, marginBottom: 20 }}>Översikt</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-              {card('Total omsättning', fmtSEK(stats.revenue), GN)}
-              {card('VALÖR provision (15%)', fmtSEK(stats.revenue * 0.15), AU)}
-              {card('Ordrar', stats.orders)}
-              {card('Vouchers', stats.vouchers)}
-              {card('Merchants', stats.merchants)}
-              {card('Deals', stats.deals)}
-            </div>
-            <div style={{ background: WH, borderRadius: 12, padding: 20, border: `1px solid ${LG}` }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: G, marginBottom: 12 }}>Merchant Balances</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr>{['Merchant','Bruttosales','Provision 15%','Netto till merchant','Obetalda ordrar'].map(th)}</tr></thead>
-                <tbody>
-                  {merchantBalances.map((mb, i) => (
-                    <tr key={i} style={{ background: i % 2 === 0 ? WH : '#F9FAFB' }}>
-                      {td(<strong>{mb.business_name}</strong>)}
-                      {td(fmtSEK(mb.gross), true)}
-                      {td(<span style={{ color: AU, fontWeight: 600 }}>{fmtSEK(mb.commission)}</span>, true)}
-                      {td(<span style={{ color: GN, fontWeight: 600 }}>{fmtSEK(mb.net)}</span>, true)}
-                      {td(<span style={{ background: mb.unpaid_orders > 0 ? '#FEF3C7' : '#D1FAE5', color: mb.unpaid_orders > 0 ? '#92400E' : '#065F46', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>{mb.unpaid_orders}</span>)}
-                    </tr>
-                  ))}
-                  {merchantBalances.length === 0 && <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', color: GR }}>Inga data ännu</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ─── PAYOUTS ─── */}
-        {activeTab === 'payouts' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, color: G }}>Utbetalningar</h2>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {(['all','pending','available','paid'] as const).map(f => (
-                  <button key={f} onClick={() => setPayoutFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, border: `1px solid ${payoutFilter === f ? G : LG}`, background: payoutFilter === f ? G : WH, color: payoutFilter === f ? WH : G, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    {f === 'all' ? 'Alla' : f === 'pending' ? 'Väntar' : f === 'available' ? 'Redo' : 'Betalda'}
-                  </button>
-                ))}
-                <button onClick={() => exportCSV(filteredPayouts, 'valor_payouts')} style={{ padding: '6px 14px', borderRadius: 20, border: `1px solid ${AU}`, background: 'none', color: AU, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>📥 CSV Export</button>
-              </div>
-            </div>
-
-            {payoutMsg && <div style={{ background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: 8, padding: '10px 16px', marginBottom: 16, color: '#065F46', fontSize: 13 }}>{payoutMsg}</div>}
-
-            {/* Summary cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-              {card('Totalt utbetalt', fmtSEK(payouts.filter(p=>p.status==='paid').reduce((s,p)=>s+(p.net_amount||p.amount||0),0)), GN)}
-              {card('Väntar godkännande', fmtSEK(payouts.filter(p=>p.status==='pending').reduce((s,p)=>s+(p.net_amount||p.amount||0),0)), '#D97706')}
-              {card('Total provision', fmtSEK(payouts.reduce((s,p)=>s+(p.commission_amount||0),0)), AU)}
-              {card('Antal utbetalningar', payouts.length)}
-            </div>
-
-            {/* Merchant Balances - create payouts */}
-            <div style={{ background: WH, borderRadius: 12, padding: 20, border: `1px solid ${LG}`, marginBottom: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: G, marginBottom: 12 }}>Skapa utbetalning</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr>{['Merchant','Att betala ut','Provision (15%)','Brutto','Obetalda ordrar','Åtgärd'].map(th)}</tr></thead>
-                <tbody>
-                  {merchantBalances.filter(mb => mb.unpaid_orders > 0).map((mb, i) => (
-                    <tr key={i} style={{ background: i % 2 === 0 ? WH : '#F9FAFB' }}>
-                      {td(<strong>{mb.business_name}</strong>)}
-                      {td(<span style={{ color: GN, fontWeight: 700 }}>{fmtSEK(mb.net)}</span>, true)}
-                      {td(<span style={{ color: AU, fontWeight: 600 }}>{fmtSEK(mb.commission)}</span>, true)}
-                      {td(fmtSEK(mb.gross), true)}
-                      {td(mb.unpaid_orders)}
-                      {td(<button onClick={() => createPayout(mb.merchant_id, mb.net, mb.unpaid_orders)} style={{ background: G, color: WH, border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Skapa utbetalning</button>)}
-                    </tr>
-                  ))}
-                  {merchantBalances.filter(mb => mb.unpaid_orders > 0).length === 0 && <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: GR }}>Inga väntande utbetalningar</td></tr>}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Payouts list */}
-            <div style={{ background: WH, borderRadius: 12, border: `1px solid ${LG}`, overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: `1px solid ${LG}` }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: G }}>Utbetalningshistorik</h3>
-              </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr>{['ID','Merchant','Brutto','Provision','Netto','Ordrar','Status','Skapad','Betald','Åtgärd'].map(th)}</tr></thead>
-                <tbody>
-                  {filteredPayouts.map((p, i) => (
-                    <tr key={p.id} style={{ background: i % 2 === 0 ? WH : '#F9FAFB' }}>
-                      {td(<span style={{ fontFamily: 'monospace', fontSize: 11, color: GR }}>{p.id?.slice(0,8)}…</span>)}
-                      {td(<strong>{p.merchants?.business_name || '–'}</strong>)}
-                      {td(fmtSEK(p.gross_amount || p.amount), true)}
-                      {td(<span style={{ color: AU }}>{fmtSEK(p.commission_amount)}</span>, true)}
-                      {td(<span style={{ color: GN, fontWeight: 700 }}>{fmtSEK(p.net_amount || p.amount)}</span>, true)}
-                      {td(p.order_count || '–')}
-                      {td(badge(p.status))}
-                      {td(fmtDate(p.created_at))}
-                      {td(p.paid_at ? fmtDate(p.paid_at) : '–')}
-                      {td(p.status === 'pending' ? (
-                        <button onClick={() => approvePayout(p.id)} style={{ background: GN, color: WH, border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>✓ Markera betald</button>
-                      ) : <span style={{ color: GR, fontSize: 11 }}>{p.status === 'paid' ? '✓ Betald' : p.status}</span>)}
-                    </tr>
-                  ))}
-                  {filteredPayouts.length === 0 && <tr><td colSpan={10} style={{ padding: 24, textAlign: 'center', color: GR }}>Inga utbetalningar</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ─── TRANSACTIONS ─── */}
-        {activeTab === 'transactions' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, color: G }}>Transaktionslogg</h2>
-              <button onClick={() => exportCSV(transactions, 'valor_transactions')} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${AU}`, background: 'none', color: AU, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>📥 CSV Export</button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-              {card('Totalt', fmtSEK(transactions.reduce((s,t)=>s+(t.gross_amount||0),0)), G)}
-              {card('Betalningar', transactions.filter(t=>t.type==='payment').length.toString(), GN, 'st')}
-              {card('Refunds', transactions.filter(t=>t.type==='refund').length.toString(), RE, 'st')}
-              {card('Provision totalt', fmtSEK(transactions.reduce((s,t)=>s+(t.commission_amount||0),0)), AU)}
-            </div>
-
-            <div style={{ background: WH, borderRadius: 12, border: `1px solid ${LG}`, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr>{['Datum','Typ','Merchant','Kund','Brutto','Provision','Netto','Status','Stripe ID'].map(th)}</tr></thead>
-                <tbody>
-                  {transactions.map((t, i) => (
-                    <tr key={t.id} style={{ background: i % 2 === 0 ? WH : '#F9FAFB' }}>
-                      {td(fmtDate(t.created_at))}
-                      {td(badge(t.type))}
-                      {td(t.merchants?.business_name || '–')}
-                      {td(t.profiles?.email || '–')}
-                      {td(fmtSEK(t.gross_amount), true)}
-                      {td(<span style={{ color: AU }}>{fmtSEK(t.commission_amount)}</span>, true)}
-                      {td(<span style={{ color: GN, fontWeight: 600 }}>{fmtSEK(t.net_amount)}</span>, true)}
-                      {td(badge(t.status))}
-                      {td(<span style={{ fontFamily: 'monospace', fontSize: 10, color: GR }}>{t.stripe_payment_intent_id?.slice(0,16) || '–'}</span>)}
-                    </tr>
-                  ))}
-                  {transactions.length === 0 && <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: GR }}>Inga transaktioner ännu</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ─── ORDERS ─── */}
-        {activeTab === 'orders' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, color: G }}>Ordrar ({orders.length})</h2>
-              <button onClick={() => exportCSV(orders, 'valor_orders')} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${AU}`, background: 'none', color: AU, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>📥 CSV</button>
-            </div>
-            <div style={{ background: WH, borderRadius: 12, border: `1px solid ${LG}`, overflow: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
-                <thead><tr>{['Order ID','Kund','Deal','Merchant','Belopp','Provision','Netto','Status','Datum'].map(th)}</tr></thead>
-                <tbody>
-                  {orders.map((o, i) => {
-                    const gross = o.amount || 0
-                    const commission = gross * 0.15
-                    const net = gross - commission
-                    return (
-                      <tr key={o.id} style={{ background: i % 2 === 0 ? WH : '#F9FAFB' }}>
-                        {td(<span style={{ fontFamily: 'monospace', fontSize: 11 }}>{o.id?.slice(0,8)}…</span>)}
-                        {td(o.profiles?.email || '–')}
-                        {td(o.deals?.title || '–')}
-                        {td(o.deals?.merchants?.business_name || '–')}
-                        {td(fmtSEK(gross), true)}
-                        {td(<span style={{ color: AU }}>{fmtSEK(commission)}</span>, true)}
-                        {td(<span style={{ color: GN, fontWeight: 600 }}>{fmtSEK(net)}</span>, true)}
-                        {td(badge(o.status))}
-                        {td(fmtDate(o.created_at))}
-                      </tr>
-                    )
-                  })}
-                  {orders.length === 0 && <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: GR }}>Inga ordrar ännu</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ─── VOUCHERS ─── */}
-        {activeTab === 'vouchers' && (
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: G, marginBottom: 20 }}>Vouchers ({vouchers.length})</h2>
-            <div style={{ background: WH, borderRadius: 12, border: `1px solid ${LG}`, overflow: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
-                <thead><tr>{['Kod','Deal','Merchant','Kund','Belopp','Status','Giltig till','Inlöst'].map(th)}</tr></thead>
-                <tbody>
-                  {vouchers.map((v, i) => (
-                    <tr key={v.id} style={{ background: i % 2 === 0 ? WH : '#F9FAFB' }}>
-                      {td(<span style={{ fontFamily: 'monospace', fontWeight: 700, color: G }}>{v.code}</span>)}
-                      {td(v.orders?.deals?.title || '–')}
-                      {td(v.orders?.deals?.merchants?.business_name || '–')}
-                      {td(v.orders?.profiles?.email || '–')}
-                      {td(fmtSEK(v.orders?.amount), true)}
-                      {td(badge(v.status))}
-                      {td(fmtDate(v.expires_at))}
-                      {td(v.redeemed_at ? fmtDate(v.redeemed_at) : '–')}
-                    </tr>
-                  ))}
-                  {vouchers.length === 0 && <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: GR }}>Inga vouchers</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ─── MERCHANTS ─── */}
-        {activeTab === 'merchants' && (
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: G, marginBottom: 20 }}>Merchants ({merchants.length})</h2>
-            <div style={{ background: WH, borderRadius: 12, border: `1px solid ${LG}`, overflow: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr>{['Företag','Email','Telefon','Status','Provision','Registrerad'].map(th)}</tr></thead>
-                <tbody>
-                  {merchants.map((m, i) => (
-                    <tr key={m.id} style={{ background: i % 2 === 0 ? WH : '#F9FAFB' }}>
-                      {td(<strong>{m.business_name}</strong>)}
-                      {td(m.email || '–')}
-                      {td(m.phone || '–')}
-                      {td(badge(m.status || 'pending'))}
-                      {td(<span style={{ color: AU, fontWeight: 600 }}>15%</span>)}
-                      {td(fmtDate(m.created_at))}
-                    </tr>
-                  ))}
-                  {merchants.length === 0 && <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: GR }}>Inga merchants</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ─── DEALS ─── */}
-        {activeTab === 'deals' && (
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: G, marginBottom: 20 }}>Deals ({deals.length})</h2>
-            <div style={{ background: WH, borderRadius: 12, border: `1px solid ${LG}`, overflow: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr>{['Titel','Merchant','Pris','Ord.pris','Rabatt','Status','Skapad'].map(th)}</tr></thead>
-                <tbody>
-                  {deals.map((d, i) => {
-                    const disc = d.original_price ? Math.round((1 - d.price / d.original_price) * 100) : 0
-                    return (
-                      <tr key={d.id} style={{ background: i % 2 === 0 ? WH : '#F9FAFB' }}>
-                        {td(<strong>{d.title}</strong>)}
-                        {td(d.merchants?.business_name || '–')}
-                        {td(fmtSEK(d.price), true)}
-                        {td(fmtSEK(d.original_price), true)}
-                        {td(<span style={{ color: RE, fontWeight: 700 }}>{disc > 0 ? `-${disc}%` : '–'}</span>)}
-                        {td(badge(d.status || 'active'))}
-                        {td(fmtDate(d.created_at))}
-                      </tr>
-                    )
-                  })}
-                  {deals.length === 0 && <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: GR }}>Inga deals</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-      </div>
-    </div>
-  )
+  
+    return (
+          <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff', fontFamily: 'sans-serif' }}>
+                <div style={{ background: '#1a1a1a', padding: '16px 32px', borderBottom: '1px solid #333', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>VALÖR Admin</h1>h1>
+                        <button onClick={() => supabase.auth.signOut().then(() => router.push('/logga-in'))} style={{ background: '#333', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>Logga ut</button>button>
+                </div>div>
+          
+                <div style={{ display: 'flex', gap: '8px', padding: '16px 32px', borderBottom: '1px solid #222', flexWrap: 'wrap' }}>
+                  {tabs.map(t => (
+                      <button key={t} onClick={() => setTab(t)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: tab === t ? '#C4974A' : '#222', color: tab === t ? '#000' : '#fff', fontWeight: tab === t ? 700 : 400 }}>
+                        {tabLabels[t]}
+                      </button>button>
+                    ))}
+                </div>div>
+          
+                <div style={{ padding: '24px 32px' }}>
+                
+                  {tab === 'overview' && (
+                      <div>
+                                  <h2 style={{ marginBottom: '24px' }}>Översikt</h2>h2>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+                                    {[
+                        { label: 'Totala ordrar', value: stats.orders, color: '#C4974A' },
+                        { label: 'Total omsättning', value: `${stats.revenue} kr`, color: '#22c55e' },
+                        { label: 'Merchants', value: stats.merchants, color: '#3b82f6' },
+                        { label: 'Aktiva deals', value: stats.deals, color: '#a855f7' },
+                                      ].map(card => (
+                                                        <div key={card.label} style={{ background: '#1a1a1a', border: `1px solid ${card.color}33`, borderRadius: '12px', padding: '20px' }}>
+                                                                          <div style={{ color: '#999', fontSize: '14px', marginBottom: '8px' }}>{card.label}</div>div>
+                                                                          <div style={{ color: card.color, fontSize: '28px', fontWeight: 700 }}>{card.value}</div>div>
+                                                        </div>div>
+                                                      ))}
+                                  </div>div>
+                                  <div style={{ background: '#1a1a1a', borderRadius: '12px', padding: '20px' }}>
+                                                <h3 style={{ margin: '0 0 16px' }}>Senaste ordrar</h3>h3>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                                <thead>
+                                                                                  <tr style={{ borderBottom: '1px solid #333' }}>
+                                                                                    {['ID', 'Belopp', 'Status', 'Datum'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', color: '#999', fontWeight: 500 }}>{h}</th>th>)}
+                                                                                    </tr>tr>
+                                                                </thead>thead>
+                                                                <tbody>
+                                                                  {orders.slice(0, 5).map(o => (
+                                            <tr key={o.id} style={{ borderBottom: '1px solid #222' }}>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{o.id?.slice(0, 8)}...</td>td>
+                                                                  <td style={{ padding: '8px' }}>{o.amount} kr</td>td>
+                                                                  <td style={{ padding: '8px' }}><span style={{ background: o.status === 'completed' ? '#22c55e22' : '#f59e0b22', color: o.status === 'completed' ? '#22c55e' : '#f59e0b', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>{o.status}</span>span></td>td>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{o.created_at ? new Date(o.created_at).toLocaleDateString('sv') : '-'}</td>td>
+                                            </tr>tr>
+                                          ))}
+                                                                </tbody>tbody>
+                                                </table>table>
+                                  </div>div>
+                      </div>div>
+                        )}
+                
+                  {tab === 'payouts' && (
+                      <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                                <h2 style={{ margin: 0 }}>Utbetalningar</h2>h2>
+                                                <button onClick={() => exportCSV(payouts, 'payouts.csv')} style={{ background: '#22c55e', border: 'none', color: '#000', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>⬇️ Exportera CSV</button>button>
+                                  </div>div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+                                    {[
+                        { label: 'Väntande', value: payouts.filter(p => p.status === 'pending').length, color: '#f59e0b' },
+                        { label: 'Tillgängliga', value: payouts.filter(p => p.status === 'available').length, color: '#3b82f6' },
+                        { label: 'Betalda', value: payouts.filter(p => p.status === 'paid').length, color: '#22c55e' },
+                                      ].map(card => (
+                                                        <div key={card.label} style={{ background: '#1a1a1a', border: `1px solid ${card.color}33`, borderRadius: '12px', padding: '20px' }}>
+                                                                          <div style={{ color: '#999', fontSize: '14px' }}>{card.label}</div>div>
+                                                                          <div style={{ color: card.color, fontSize: '32px', fontWeight: 700 }}>{card.value}</div>div>
+                                                        </div>div>
+                                                      ))}
+                                  </div>div>
+                                  <div style={{ background: '#1a1a1a', borderRadius: '12px', padding: '20px' }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                                <thead>
+                                                                                  <tr style={{ borderBottom: '1px solid #333' }}>
+                                                                                    {['Merchant', 'Belopp', 'Provision (15%)', 'Netto (85%)', 'Status', 'Åtgärd'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', color: '#999', fontWeight: 500 }}>{h}</th>th>)}
+                                                                                    </tr>tr>
+                                                                </thead>thead>
+                                                                <tbody>
+                                                                  {payouts.map(p => (
+                                            <tr key={p.id} style={{ borderBottom: '1px solid #222' }}>
+                                                                  <td style={{ padding: '8px' }}>{p.merchant_id?.slice(0, 8) || '-'}</td>td>
+                                                                  <td style={{ padding: '8px' }}>{p.gross_amount || p.amount || 0} kr</td>td>
+                                                                  <td style={{ padding: '8px', color: '#C4974A' }}>{p.commission_amount || 0} kr</td>td>
+                                                                  <td style={{ padding: '8px', color: '#22c55e' }}>{p.net_amount || p.amount || 0} kr</td>td>
+                                                                  <td style={{ padding: '8px' }}><span style={{ background: p.status === 'paid' ? '#22c55e22' : p.status === 'available' ? '#3b82f622' : '#f59e0b22', color: p.status === 'paid' ? '#22c55e' : p.status === 'available' ? '#3b82f6' : '#f59e0b', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>{p.status}</span>span></td>td>
+                                                                  <td style={{ padding: '8px' }}>
+                                                                    {p.status !== 'paid' && (
+                                                                        <button onClick={() => markPayoutPaid(p.id)} style={{ background: '#22c55e', border: 'none', color: '#000', padding: '4px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>✓ Markera betald</button>button>
+                                                                                          )}
+                                                                  </td>td>
+                                            </tr>tr>
+                                          ))}
+                                                                  {payouts.length === 0 && (
+                                            <tr><td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: '#555' }}>Inga utbetalningar ännu</td>td></tr>tr>
+                                                                                  )}
+                                                                </tbody>tbody>
+                                                </table>table>
+                                  </div>div>
+                      </div>div>
+                        )}
+                
+                  {tab === 'transactions' && (
+                      <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                                <h2 style={{ margin: 0 }}>Transaktioner</h2>h2>
+                                                <button onClick={() => exportCSV(transactions, 'transactions.csv')} style={{ background: '#22c55e', border: 'none', color: '#000', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>⬇️ Exportera CSV</button>button>
+                                  </div>div>
+                                  <div style={{ background: '#1a1a1a', borderRadius: '12px', padding: '20px' }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                                <thead>
+                                                                                  <tr style={{ borderBottom: '1px solid #333' }}>
+                                                                                    {['ID', 'Typ', 'Belopp', 'Status', 'Datum'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', color: '#999', fontWeight: 500 }}>{h}</th>th>)}
+                                                                                    </tr>tr>
+                                                                </thead>thead>
+                                                                <tbody>
+                                                                  {transactions.map(t => (
+                                            <tr key={t.id} style={{ borderBottom: '1px solid #222' }}>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{t.id?.slice(0, 8)}...</td>td>
+                                                                  <td style={{ padding: '8px' }}>{t.type || t.transaction_type || '-'}</td>td>
+                                                                  <td style={{ padding: '8px' }}>{t.amount || 0} kr</td>td>
+                                                                  <td style={{ padding: '8px' }}><span style={{ background: '#22c55e22', color: '#22c55e', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>{t.status || 'completed'}</span>span></td>td>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{t.created_at ? new Date(t.created_at).toLocaleDateString('sv') : '-'}</td>td>
+                                            </tr>tr>
+                                          ))}
+                                                                  {transactions.length === 0 && (
+                                            <tr><td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: '#555' }}>Inga transaktioner ännu</td>td></tr>tr>
+                                                                                  )}
+                                                                </tbody>tbody>
+                                                </table>table>
+                                  </div>div>
+                      </div>div>
+                        )}
+                
+                  {tab === 'orders' && (
+                      <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                                <h2 style={{ margin: 0 }}>Ordrar</h2>h2>
+                                                <button onClick={() => exportCSV(orders, 'orders.csv')} style={{ background: '#22c55e', border: 'none', color: '#000', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>⬇️ Exportera CSV</button>button>
+                                  </div>div>
+                                  <div style={{ background: '#1a1a1a', borderRadius: '12px', padding: '20px' }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                                <thead>
+                                                                                  <tr style={{ borderBottom: '1px solid #333' }}>
+                                                                                    {['ID', 'Belopp', 'Status', 'Datum'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', color: '#999', fontWeight: 500 }}>{h}</th>th>)}
+                                                                                    </tr>tr>
+                                                                </thead>thead>
+                                                                <tbody>
+                                                                  {orders.map(o => (
+                                            <tr key={o.id} style={{ borderBottom: '1px solid #222' }}>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{o.id?.slice(0, 8)}...</td>td>
+                                                                  <td style={{ padding: '8px' }}>{o.amount} kr</td>td>
+                                                                  <td style={{ padding: '8px' }}><span style={{ background: o.status === 'completed' ? '#22c55e22' : '#f59e0b22', color: o.status === 'completed' ? '#22c55e' : '#f59e0b', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>{o.status}</span>span></td>td>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{o.created_at ? new Date(o.created_at).toLocaleDateString('sv') : '-'}</td>td>
+                                            </tr>tr>
+                                          ))}
+                                                                  {orders.length === 0 && <tr><td colSpan={4} style={{ padding: '32px', textAlign: 'center', color: '#555' }}>Inga ordrar ännu</td>td></tr>tr>}
+                                                                </tbody>tbody>
+                                                </table>table>
+                                  </div>div>
+                      </div>div>
+                        )}
+                
+                  {tab === 'vouchers' && (
+                      <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                                <h2 style={{ margin: 0 }}>Vouchers</h2>h2>
+                                                <button onClick={() => exportCSV(vouchers, 'vouchers.csv')} style={{ background: '#22c55e', border: 'none', color: '#000', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>⬇️ Exportera CSV</button>button>
+                                  </div>div>
+                                  <div style={{ background: '#1a1a1a', borderRadius: '12px', padding: '20px' }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                                <thead>
+                                                                                  <tr style={{ borderBottom: '1px solid #333' }}>
+                                                                                    {['Kod', 'Status', 'Deal', 'Datum'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', color: '#999', fontWeight: 500 }}>{h}</th>th>)}
+                                                                                    </tr>tr>
+                                                                </thead>thead>
+                                                                <tbody>
+                                                                  {vouchers.map(v => (
+                                            <tr key={v.id} style={{ borderBottom: '1px solid #222' }}>
+                                                                  <td style={{ padding: '8px', fontFamily: 'monospace' }}>{v.code || v.voucher_code || '-'}</td>td>
+                                                                  <td style={{ padding: '8px' }}><span style={{ background: v.used || v.redeemed ? '#22c55e22' : '#3b82f622', color: v.used || v.redeemed ? '#22c55e' : '#3b82f6', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>{v.used || v.redeemed ? 'Använd' : 'Aktiv'}</span>span></td>td>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{v.deal_id?.slice(0, 8) || '-'}</td>td>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{v.created_at ? new Date(v.created_at).toLocaleDateString('sv') : '-'}</td>td>
+                                            </tr>tr>
+                                          ))}
+                                                                  {vouchers.length === 0 && <tr><td colSpan={4} style={{ padding: '32px', textAlign: 'center', color: '#555' }}>Inga vouchers ännu</td>td></tr>tr>}
+                                                                </tbody>tbody>
+                                                </table>table>
+                                  </div>div>
+                      </div>div>
+                        )}
+                
+                  {tab === 'merchants' && (
+                      <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                                <h2 style={{ margin: 0 }}>Merchants</h2>h2>
+                                                <button onClick={() => exportCSV(merchants, 'merchants.csv')} style={{ background: '#22c55e', border: 'none', color: '#000', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>⬇️ Exportera CSV</button>button>
+                                  </div>div>
+                                  <div style={{ background: '#1a1a1a', borderRadius: '12px', padding: '20px' }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                                <thead>
+                                                                                  <tr style={{ borderBottom: '1px solid #333' }}>
+                                                                                    {['Namn', 'Email', 'Roll', 'Registrerad'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', color: '#999', fontWeight: 500 }}>{h}</th>th>)}
+                                                                                    </tr>tr>
+                                                                </thead>thead>
+                                                                <tbody>
+                                                                  {merchants.map(m => (
+                                            <tr key={m.id} style={{ borderBottom: '1px solid #222' }}>
+                                                                  <td style={{ padding: '8px' }}>{m.full_name || m.name || '-'}</td>td>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{m.email || '-'}</td>td>
+                                                                  <td style={{ padding: '8px' }}><span style={{ background: m.role === 'merchant' ? '#C4974A22' : '#33333344', color: m.role === 'merchant' ? '#C4974A' : '#999', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>{m.role || 'user'}</span>span></td>td>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{m.created_at ? new Date(m.created_at).toLocaleDateString('sv') : '-'}</td>td>
+                                            </tr>tr>
+                                          ))}
+                                                                  {merchants.length === 0 && <tr><td colSpan={4} style={{ padding: '32px', textAlign: 'center', color: '#555' }}>Inga merchants ännu</td>td></tr>tr>}
+                                                                </tbody>tbody>
+                                                </table>table>
+                                  </div>div>
+                      </div>div>
+                        )}
+                
+                  {tab === 'deals' && (
+                      <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                                <h2 style={{ margin: 0 }}>Deals</h2>h2>
+                                                <button onClick={() => exportCSV(deals, 'deals.csv')} style={{ background: '#22c55e', border: 'none', color: '#000', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>⬇️ Exportera CSV</button>button>
+                                  </div>div>
+                                  <div style={{ background: '#1a1a1a', borderRadius: '12px', padding: '20px' }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                                <thead>
+                                                                                  <tr style={{ borderBottom: '1px solid #333' }}>
+                                                                                    {['Titel', 'Pris', 'Ordinarie', 'Status', 'Datum'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', color: '#999', fontWeight: 500 }}>{h}</th>th>)}
+                                                                                    </tr>tr>
+                                                                </thead>thead>
+                                                                <tbody>
+                                                                  {deals.map(d => (
+                                            <tr key={d.id} style={{ borderBottom: '1px solid #222' }}>
+                                                                  <td style={{ padding: '8px' }}>{d.title || d.name || '-'}</td>td>
+                                                                  <td style={{ padding: '8px', color: '#C4974A' }}>{d.price || d.discounted_price || 0} kr</td>td>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999', textDecoration: 'line-through' }}>{d.original_price || 0} kr</td>td>
+                                                                  <td style={{ padding: '8px' }}><span style={{ background: d.active || d.is_active ? '#22c55e22' : '#33333344', color: d.active || d.is_active ? '#22c55e' : '#999', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>{d.active || d.is_active ? 'Aktiv' : 'Inaktiv'}</span>span></td>td>
+                                                                  <td style={{ padding: '8px', fontSize: '13px', color: '#999' }}>{d.created_at ? new Date(d.created_at).toLocaleDateString('sv') : '-'}</td>td>
+                                            </tr>tr>
+                                          ))}
+                                                                  {deals.length === 0 && <tr><td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: '#555' }}>Inga deals ännu</td>td></tr>tr>}
+                                                                </tbody>tbody>
+                                                </table>table>
+                                  </div>div>
+                      </div>div>
+                        )}
+                
+                </div>div>
+          </div>div>
+        )
 }
