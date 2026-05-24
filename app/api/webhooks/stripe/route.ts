@@ -4,13 +4,11 @@ import { createClient } from '@supabase/supabase-js'
 // ============================================================
 // STRIPE WEBHOOK HANDLER - Production Grade
 // CRITICAL: Verifies Stripe signature before processing
-// This is where vouchers get created after confirmed payment
+// Next.js 14 App Router - use export const dynamic
 // ============================================================
 
-// IMPORTANT: Disable body parsing for webhook signature verification
-export const config = {
-  api: { bodyParser: false },
-}
+// Required: disable caching for webhook handler
+export const dynamic = 'force-dynamic'
 
 function getAdminSupabase() {
   return createClient(
@@ -28,7 +26,6 @@ function generateVoucherCode(): string {
   return code.slice(0, 4) + '-' + code.slice(4, 8) + '-' + code.slice(8, 12)
 }
 
-// Log to audit trail
 async function logAuditEvent(supabase: any, event: {
   action: string
   resource_type: string
@@ -53,7 +50,6 @@ export async function POST(request: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
   // ── STRIPE SIGNATURE VERIFICATION ─────────────────────
-  // CRITICAL: Without this, anyone can fake a "payment succeeded" event
   if (!webhookSecret) {
     console.error('[STRIPE WEBHOOK] Missing STRIPE_WEBHOOK_SECRET env var')
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
@@ -67,7 +63,6 @@ export async function POST(request: NextRequest) {
   let event: any
 
   try {
-    // Dynamic import to avoid issues when Stripe key not set
     const Stripe = (await import('stripe')).default
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' })
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
@@ -78,37 +73,27 @@ export async function POST(request: NextRequest) {
 
   const adminSupabase = getAdminSupabase()
 
-  // ── HANDLE EVENTS ──────────────────────────────────────
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object
-        
-        // Only process if payment was successful
         if (session.payment_status !== 'paid') break
 
         const { dealId, userId, quantity } = session.metadata || {}
-        
         if (!dealId || !userId) {
-          console.error('[STRIPE WEBHOOK] Missing metadata in session:', session.id)
+          console.error('[STRIPE WEBHOOK] Missing metadata:', session.id)
           break
         }
 
         const qty = parseInt(quantity || '1')
-
-        // Get deal info
         const { data: deal } = await adminSupabase
           .from('deals')
-          .select('id, title, deal_price, merchant_id, sold_count')
+          .select('id, title, deal_price, sold_count')
           .eq('id', dealId)
           .single()
 
-        if (!deal) {
-          console.error('[STRIPE WEBHOOK] Deal not found:', dealId)
-          break
-        }
+        if (!deal) break
 
-        // Create order
         const { data: order } = await adminSupabase
           .from('orders')
           .insert({
@@ -125,7 +110,6 @@ export async function POST(request: NextRequest) {
 
         if (!order) break
 
-        // Create voucher(s)
         const vouchers = Array.from({ length: qty }, () => ({
           order_id: order.id,
           user_id: userId,
@@ -135,14 +119,8 @@ export async function POST(request: NextRequest) {
         }))
 
         await adminSupabase.from('vouchers').insert(vouchers)
+        await adminSupabase.from('deals').update({ sold_count: (deal.sold_count || 0) + qty }).eq('id', dealId)
 
-        // Update sold count
-        await adminSupabase
-          .from('deals')
-          .update({ sold_count: (deal.sold_count || 0) + qty })
-          .eq('id', dealId)
-
-        // Audit log
         await logAuditEvent(adminSupabase, {
           action: 'payment_completed',
           resource_type: 'order',
@@ -150,19 +128,10 @@ export async function POST(request: NextRequest) {
           user_id: userId,
           metadata: { dealId, qty, sessionId: session.id, amount: session.amount_total },
         })
-
-        console.log('[STRIPE WEBHOOK] Order created:', order.id, 'vouchers:', qty)
-        break
-      }
-
-      case 'payment_intent.payment_failed': {
-        const intent = event.data.object
-        console.warn('[STRIPE WEBHOOK] Payment failed:', intent.id)
         break
       }
 
       case 'charge.dispute.created': {
-        // Alert on chargebacks
         const dispute = event.data.object
         console.error('[STRIPE WEBHOOK] CHARGEBACK:', dispute.id, 'amount:', dispute.amount)
         await logAuditEvent(adminSupabase, {
@@ -176,7 +145,6 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error('[STRIPE WEBHOOK] Processing error:', err)
-    // Return 200 to Stripe anyway to prevent retries for non-critical errors
   }
 
   return NextResponse.json({ received: true })
