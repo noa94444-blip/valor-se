@@ -6,150 +6,128 @@ import { useRouter } from 'next/navigation'
 
 const G = '#1A3A2A'
 const AU = '#C4974A'
-const IV = '#F5F2ED'
-const WH = '#FFFFFF'
-const GR = '#6B7280'
-const LG = '#E8E4DE'
-const ER = '#DC2626'
+const IV = '#F5F0E8'
+const GR = '#4A7A5A'
 
-export default function LoggaInPage() {
-          const router = useRouter()
-          const [email, setEmail] = useState('')
-          const [password, setPassword] = useState('')
-          const [loading, setLoading] = useState(false)
-          const [error, setError] = useState('')
-          const [mode, setMode] = useState<'login' | 'register'>('login')
-          const [name, setName] = useState('')
-          const [redirectTo, setRedirectTo] = useState<string | null>(null)
+export default function LoggaIn() {
+  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [redirectTo, setRedirectTo] = useState('/deals')
+  const router = useRouter()
 
   useEffect(() => {
-              const params = new URLSearchParams(window.location.search)
-              const r = params.get('redirect')
-              if (r && r.startsWith('/')) setRedirectTo(r)
+    const params = new URLSearchParams(window.location.search)
+    const redirect = params.get('redirect')
+    if (redirect) setRedirectTo(redirect)
   }, [])
 
-  async function handleSubmit(e: React.FormEvent) {
-              e.preventDefault()
-              if (!email || !password) {
-                            setError('Fyll i e-post och losenord.')
-                            return
-              }
-              setLoading(true)
-              setError('')
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
 
-            if (mode === 'login') {
-                          const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
-                          if (authError) {
-                                          setError('Fel e-post eller losenord. Forsok igen.')
-                                          setLoading(false)
-                                          return
-                          }
-                          const { data: profile } = await supabase
-                            .from('profiles')
-                            .select('role')
-                            .eq('id', data.user.id)
-                            .single()
-
-                const role = profile?.role || 'customer'
-
-                if (redirectTo) {
-                                router.push(redirectTo)
-                } else if (role === 'admin') {
-                                router.push('/admin')
-                } else if (role === 'merchant') {
-                                router.push('/merchant')
-                } else {
-                                router.push('/konto')
-                }
-            } else {
-                          const { data, error: signUpError } = await supabase.auth.signUp({
-                                          email,
-                                          password,
-                                          options: { data: { full_name: name } }
-                          })
-                          if (signUpError) {
-                                          setError(signUpError.message)
-                                          setLoading(false)
-                                          return
-                          }
-                          if (data.user) {
-                                          await supabase.from('profiles').upsert({
-                                                            id: data.user.id,
-                                                            email,
-                                                            full_name: name,
-                                                            role: 'customer'
-                                          })
-                                          router.push('/konto')
-                          }
-            }
-              setLoading(false)
+    try {
+      if (mode === 'login') {
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (loginError) throw loginError
+        router.push(redirectTo)
+      } else {
+        const { error: registerError } = await supabase.auth.signUp({
+          email,
+          password,
+        })
+        if (registerError) throw registerError
+        setError('Konto skapat! Kontrollera din e-post för bekräftelse.')
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Ett fel uppstod'
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-              <div style={{ minHeight: '100vh', backgroundColor: IV, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: 24 }}>
-                            <div style={{ width: '100%', maxWidth: 420 }}>
-                                            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                                                              <a href="/" style={{ textDecoration: 'none' }}>
-                                                                                  <div style={{ fontSize: 32, fontFamily: 'Georgia, serif', color: G, letterSpacing: 2 }}>Valor</div>div>
-                                                                                  <div style={{ fontSize: 11, letterSpacing: 4, color: AU, textTransform: 'uppercase', marginTop: 4 }}>Premium Deals</div>div>
-                                                              </a>a>
-                                            </div>div>
+    <div style={{ minHeight: '100vh', backgroundColor: IV, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{ backgroundColor: 'white', borderRadius: 12, padding: '40px', maxWidth: 400, width: '100%', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: G, margin: 0 }}>VALÖR</h1>
+          <p style={{ color: GR, marginTop: 8, fontSize: 14 }}>
+            {mode === 'login' ? 'Logga in på ditt konto' : 'Skapa ett nytt konto'}
+          </p>
+        </div>
 
-                                            <div style={{ backgroundColor: WH, borderRadius: 16, padding: 40, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
-                                                              <div style={{ display: 'flex', borderBottom: `1px solid ${LG}`, marginBottom: 28 }}>
-                                                                                  <button onClick={() => setMode('login')} style={{ flex: 1, padding: '12px 0', border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, color: mode === 'login' ? G : GR, borderBottom: mode === 'login' ? `2px solid ${G}` : '2px solid transparent', fontFamily: 'Inter, sans-serif', fontWeight: mode === 'login' ? 600 : 400 }}>
-                                                                                                        Logga in
-                                                                                          </button>button>
-                                                                                  <button onClick={() => setMode('register')} style={{ flex: 1, padding: '12px 0', border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, color: mode === 'register' ? G : GR, borderBottom: mode === 'register' ? `2px solid ${G}` : '2px solid transparent', fontFamily: 'Inter, sans-serif', fontWeight: mode === 'register' ? 600 : 400 }}>
-                                                                                                        Skapa konto
-                                                                                          </button>button>
-                                                              </div>div>
+        <div style={{ display: 'flex', marginBottom: 24, borderRadius: 8, overflow: 'hidden', border: `1px solid #E0D8CC` }}>
+          <button
+            type="button"
+            onClick={() => setMode('login')}
+            style={{ flex: 1, padding: '10px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, backgroundColor: mode === 'login' ? G : 'white', color: mode === 'login' ? 'white' : G }}
+          >
+            Logga in
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('register')}
+            style={{ flex: 1, padding: '10px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, backgroundColor: mode === 'register' ? G : 'white', color: mode === 'register' ? 'white' : G }}
+          >
+            Registrera
+          </button>
+        </div>
 
-                                                              <form onSubmit={handleSubmit}>
-                                                                      {mode === 'register' && (
-                                    <div style={{ marginBottom: 16 }}>
-                                                            <label style={{ display: 'block', fontSize: 13, color: G, marginBottom: 6, fontWeight: 500 }}>Namn</label>label>
-                                                            <input type="text" value={name} onChange={e => setName(e.target.value)} required={mode === 'register'}
-                                                                                      placeholder="Ditt namn"
-                                                                                      style={{ width: '100%', padding: '12px 16px', border: `1px solid ${LG}`, borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }} />
-                                    </div>div>
-                                  )}
-                                                                                  <div style={{ marginBottom: 16 }}>
-                                                                                                        <label style={{ display: 'block', fontSize: 13, color: G, marginBottom: 6, fontWeight: 500 }}>E-postadress</label>label>
-                                                                                                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                                                                                                                                placeholder="din@email.se"
-                                                                                                                                style={{ width: '100%', padding: '12px 16px', border: `1px solid ${LG}`, borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }} />
-                                                                                          </div>div>
-                                                                                  <div style={{ marginBottom: 24 }}>
-                                                                                                        <label style={{ display: 'block', fontSize: 13, color: G, marginBottom: 6, fontWeight: 500 }}>Losenord</label>label>
-                                                                                                        <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
-                                                                                                                                placeholder="Minst 6 tecken"
-                                                                                                                                style={{ width: '100%', padding: '12px 16px', border: `1px solid ${LG}`, borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }} />
-                                                                                          </div>div>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: G }}>E-post</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0D8CC', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
+            />
+          </div>
 
-                                                                      {error && (
-                                    <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: ER, fontSize: 13 }}>
-                                            {error}
-                                    </div>div>
-                                  )}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: G }}>Lösenord</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid #E0D8CC', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
+            />
+          </div>
 
-                                                                                  <button type="submit" disabled={loading}
-                                                                                                        style={{ width: '100%', padding: '14px', backgroundColor: G, color: AU, border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', opacity: loading ? 0.7 : 1 }}>
-                                                                                          {loading ? 'Laddar...' : mode === 'login' ? 'Logga in' : 'Skapa konto'}
-                                                                                          </button>button>
-                                                              </form>form>
+          {error && (
+            <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '12px', marginBottom: 16 }}>
+              <p style={{ color: '#DC2626', fontSize: 13, margin: 0 }}>{error}</p>
+            </div>
+          )}
 
-                                                    {mode === 'login' && (
-                                  <div style={{ textAlign: 'center', marginTop: 20 }}>
-                                                        <a href="#" style={{ fontSize: 13, color: AU, textDecoration: 'none' }}>Glömt losenordet?</a>a>
-                                  </div>div>
-                                )}
-                                            </div>div>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ width: '100%', padding: '12px', backgroundColor: loading ? GR : G, color: 'white', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}
+          >
+            {loading ? 'Laddar...' : mode === 'login' ? 'Logga in' : 'Registrera'}
+          </button>
+        </form>
 
-                                            <div style={{ textAlign: 'center', marginTop: 24 }}>
-                                                              <a href="/deals" style={{ fontSize: 13, color: GR, textDecoration: 'none' }}>Tillbaka till deals</a>a>
-                                            </div>div>
-                            </div>div>
-              </div>div>
-            )
+        {mode === 'login' && (
+          <div style={{ textAlign: 'center', marginTop: 20 }}>
+            <a href="#" style={{ fontSize: 13, color: GR, textDecoration: 'none' }}>Glömt lösenord?</a>
+          </div>
+        )}
+
+        <div style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: GR }}>
+          <a href="/deals" style={{ color: G, textDecoration: 'none' }}>Tillbaka till deals</a>
+        </div>
+      </div>
+    </div>
+  )
 }
