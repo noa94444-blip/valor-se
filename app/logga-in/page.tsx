@@ -41,6 +41,9 @@ export default function LoggaIn() {
         const { error: registerError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://valor-se.vercel.app'}/logga-in`,
+          },
         })
         if (registerError) throw registerError
         setError('Konto skapat! Kontrollera din e-post för bekräftelse.')
