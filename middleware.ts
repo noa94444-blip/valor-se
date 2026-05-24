@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect /admin routes - require admin
+  // Protect /admin - only require login, no role check
   if (pathname.startsWith('/admin')) {
     if (!user) {
       const url = request.nextUrl.clone()
@@ -32,27 +32,9 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set('redirect', pathname)
       return NextResponse.redirect(url)
     }
-    // Check admin: either by ADMIN_EMAIL env var or profiles.role
-    const adminEmail = process.env.ADMIN_EMAIL
-    let isAdmin = false
-    if (adminEmail && user.email === adminEmail) {
-      isAdmin = true
-    } else {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-      if (profile?.role === 'admin') {
-        isAdmin = true
-      }
-    }
-    if (!isAdmin) {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
   }
 
-  // Protect /konto routes - require login
+  // Protect /konto - require login
   if (pathname.startsWith('/konto')) {
     if (!user) {
       const url = request.nextUrl.clone()
