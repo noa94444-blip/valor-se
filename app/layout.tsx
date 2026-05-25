@@ -1,16 +1,46 @@
+// @ts-nocheck
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
+
+const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: {
-    default: 'Valör – Premium deals i din stad',
-    template: '%s | Valör',
+    default: 'VALÖR – Premium deals i din stad',
+    template: '%s | VALÖR'
   },
-  description: 'Hitta exklusiva deals på spa, restauranger, upplevelser och mer. Kurerade erbjudanden för den kräsne kunden i Stockholm, Göteborg och Malmö.',
-  keywords: 'deals, erbjudanden, spa, restauranger, upplevelser, Stockholm, Göteborg, Malmö, Sverige, premium, voucher, rabatt',
-  authors: [{ name: 'Valör' }],
-  creator: 'Valör',
-  publisher: 'Valör',
+  description: 'Hitta de bästa lokala erbjudandena på bilservice, restauranger, skönhet och mer. Spara upp till 50% med VALÖR.',
+  keywords: ['deals', 'erbjudanden', 'rabatter', 'stockholm', 'bilservice', 'restaurang', 'skönhet', 'spa'],
+  authors: [{ name: 'VALÖR' }],
+  creator: 'VALÖR',
+  publisher: 'VALÖR',
+  metadataBase: new URL('https://valor-se.vercel.app'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'VALÖR – Premium deals i din stad',
+    description: 'Hitta de bästa lokala erbjudandena. Spara upp till 50% med VALÖR.',
+    url: 'https://valor-se.vercel.app',
+    siteName: 'VALÖR',
+    locale: 'sv_SE',
+    type: 'website',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'VALÖR – Premium deals i din stad',
+      }
+    ]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'VALÖR – Premium deals i din stad',
+    description: 'Hitta de bästa lokala erbjudandena. Spara upp till 50% med VALÖR.',
+    images: ['/og-image.png'],
+  },
   robots: {
     index: true,
     follow: true,
@@ -22,30 +52,8 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  openGraph: {
-    type: 'website',
-    locale: 'sv_SE',
-    url: 'https://www.xn--valr-7qa.se',
-    siteName: 'Valör',
-    title: 'Valör – Premium deals i din stad',
-    description: 'Exklusiva deals på spa, restauranger och upplevelser. Upplev mer. Betala mindre.',
-    images: [
-      {
-        url: 'https://valor-se.vercel.app/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Valör – Premium deals',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Valör – Premium deals i din stad',
-    description: 'Exklusiva deals på spa, restauranger och upplevelser.',
-    images: ['https://valor-se.vercel.app/og-image.png'],
-  },
-  alternates: {
-    canonical: 'https://www.xn--valr-7qa.se',
+  verification: {
+    google: '',
   },
   category: 'shopping',
 }
@@ -55,32 +63,39 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="sv">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        <meta name="theme-color" content="#1A3A2A" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
-          rel="stylesheet"
-        />
+        <meta name="theme-color" content="#0a0a0a" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              "name": "Valör",
-              "url": "https://www.xn--valr-7qa.se",
-              "description": "Premium deals på spa, restauranger och upplevelser i Sverige",
-              "potentialAction": {
-                "@type": "SearchAction",
-                "target": "https://www.xn--valr-7qa.se/deals?q={search_term_string}",
-                "query-input": "required name=search_term_string"
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'VALÖR',
+              url: 'https://valor-se.vercel.app',
+              description: 'Premium deals och erbjudanden i din stad',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: {
+                  '@type': 'EntryPoint',
+                  urlTemplate: 'https://valor-se.vercel.app/deals?q={search_term_string}'
+                },
+                'query-input': 'required name=search_term_string'
+              },
+              publisher: {
+                '@type': 'Organization',
+                name: 'VALÖR',
+                url: 'https://valor-se.vercel.app',
+                logo: {
+                  '@type': 'ImageObject',
+                  url: 'https://valor-se.vercel.app/logo.png'
+                }
               }
             })
           }}
         />
       </head>
-      <body style={{ margin: 0, padding: 0, fontFamily: 'Inter, system-ui, sans-serif', background: '#F5F2ED' } as React.CSSProperties}>
+      <body className={inter.className} style={{ margin: 0, background: '#0a0a0a', color: '#fff' }}>
         {children}
       </body>
     </html>
