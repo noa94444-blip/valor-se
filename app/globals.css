@@ -7,11 +7,11 @@
 :root {
   --gold: #c9a84c;
   --gold-light: #e8c97a;
-  --bg: #0a0a0a;
-  --bg-card: #111111;
-  --bg-hover: #161616;
-  --border: #1a1a1a;
-  --border-light: #222222;
+  --bg: #0d0b08;
+  --bg-card: #13110d;
+  --bg-hover: #1a1710;
+  --border: #1e1b14;
+  --border-light: #26221a;
   --text: #ffffff;
   --text-secondary: #888888;
   --text-muted: #555555;
