@@ -69,7 +69,6 @@ export default function AdminPage() {
       category: form.kategori,
       city: form.stad,
       company: form.foretag,
-      active: form.aktiv,
     }
     let fel = null
     if (visa && visa.id) {
