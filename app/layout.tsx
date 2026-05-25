@@ -1,6 +1,7 @@
 // @ts-nocheck
 import type { Metadata } from 'next'
 import './globals.css'
+import SupportChat from '../components/SupportChat'
 
 export const metadata: Metadata = {
   title: 'Valör – Premium deals i din stad',
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ backgroundColor: '#F5F2ED', color: '#26231F' }} className="font-body antialiased">
         {children}
+        <SupportChat />
       </body>
     </html>
   )
