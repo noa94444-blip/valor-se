@@ -5,10 +5,10 @@ export default function robots() {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin', '/admin/', '/admin/orders', '/api/'],
+        disallow: ['/admin/', '/api/', '/konto/', '/logga-in/', '/registrera/'],
       },
     ],
-    sitemap: 'https://valor-se.vercel.app/sitemap.xml',
-    host: 'https://valor-se.vercel.app',
+    sitemap: 'https://xn--valr-7qa.se/sitemap.xml',
+    host: 'https://xn--valr-7qa.se',
   }
 }
