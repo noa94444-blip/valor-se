@@ -23,13 +23,13 @@ export default async function HomePage() {
   const categories = [...new Set(deals.map(d => d.category).filter(Boolean))]
 
   return (
-    <main style={{ minHeight: '100vh', background: '#0a0a0a', fontFamily: 'system-ui, sans-serif', color: '#fff' }}>
+    <main style={{ minHeight: '100vh', background: '#0d0b08', fontFamily: 'system-ui, sans-serif', color: '#fff' }}>
       <nav style={{ borderBottom: '1px solid #1a1a1a', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, position: 'sticky', top: 0, background: 'rgba(10,10,10,0.95)', backdropFilter: 'blur(12px)', zIndex: 100 }}>
         <Link href="/" style={{ fontSize: 22, fontWeight: 800, color: '#c9a84c', letterSpacing: '-1px', textDecoration: 'none' }}>VALÖR</Link>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <Link href="/deals" style={{ color: '#888', fontSize: 13, textDecoration: 'none', padding: '8px 14px', borderRadius: 8 }}>Alla deals</Link>
           <Link href="/konto" style={{ color: '#888', fontSize: 13, textDecoration: 'none', padding: '8px 14px', borderRadius: 8 }}>Konto</Link>
-          <Link href="/merchant" style={{ background: '#1a1a1a', color: '#c9a84c', fontSize: 12, textDecoration: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, border: '1px solid #333' }}>Merchant</Link>
+          <Link href="/merchant" style={{ background: '#1e1b14', color: '#c9a84c', fontSize: 12, textDecoration: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, border: '1px solid #333' }}>Merchant</Link>
         </div>
       </nav>
 
@@ -40,7 +40,7 @@ export default async function HomePage() {
         </h1>
         <p style={{ fontSize: 18, color: '#888', lineHeight: 1.6, marginBottom: 36, maxWidth: 500, margin: '0 auto 36px' }}>Bilservice, restauranger, skönhet, spa och mer — upp till 50% rabatt på premiumtjänster nära dig.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/deals" style={{ background: '#c9a84c', color: '#0a0a0a', padding: '14px 28px', borderRadius: 10, fontSize: 15, fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>Se alla deals</Link>
+          <Link href="/deals" style={{ background: '#c9a84c', color: '#0d0b08', padding: '14px 28px', borderRadius: 10, fontSize: 15, fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>Se alla deals</Link>
           <Link href="/merchant" style={{ background: 'transparent', border: '1px solid #333', color: '#888', padding: '14px 24px', borderRadius: 10, fontSize: 14, textDecoration: 'none', display: 'inline-block' }}>Bli merchant</Link>
         </div>
       </section>
@@ -64,9 +64,9 @@ export default async function HomePage() {
       {categories.length > 0 && (
         <section style={{ padding: '40px 32px 0' }}>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Link href="/deals" style={{ background: '#c9a84c', color: '#0a0a0a', padding: '8px 18px', borderRadius: 100, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>Alla</Link>
+            <Link href="/deals" style={{ background: '#c9a84c', color: '#0d0b08', padding: '8px 18px', borderRadius: 100, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>Alla</Link>
             {categories.map(cat => (
-              <Link key={cat} href={'/deals?kategori=' + encodeURIComponent(cat)} style={{ background: '#111', border: '1px solid #222', color: '#888', padding: '8px 18px', borderRadius: 100, fontSize: 12, textDecoration: 'none' }}>{cat}</Link>
+              <Link key={cat} href={'/deals?kategori=' + encodeURIComponent(cat)} style={{ background: '#13110d', border: '1px solid #222', color: '#888', padding: '8px 18px', borderRadius: 100, fontSize: 12, textDecoration: 'none' }}>{cat}</Link>
             ))}
           </div>
         </section>
@@ -83,11 +83,11 @@ export default async function HomePage() {
             const emoji = deal.category === 'Bilservice' ? '🚗' : deal.category === 'Restaurang' ? '🍽️' : deal.category === 'Skönhet' ? '💆' : '✨'
             return (
               <Link key={deal.id} href={'/deals/' + deal.slug} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-                <div style={{ background: '#111', border: '1px solid #1a1a1a', borderRadius: 16, overflow: 'hidden', cursor: 'pointer' }}>
+                <div style={{ background: '#13110d', border: '1px solid #1a1a1a', borderRadius: 16, overflow: 'hidden', cursor: 'pointer' }}>
                   <div style={{ height: 140, background: 'linear-gradient(135deg, #1a1200, #2a1a00)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     <span style={{ fontSize: 40 }}>{emoji}</span>
                     {discount > 0 && (
-                      <div style={{ position: 'absolute', top: 12, right: 12, background: '#c9a84c', color: '#0a0a0a', fontSize: 11, fontWeight: 800, padding: '4px 8px', borderRadius: 6 }}>-{discount}%</div>
+                      <div style={{ position: 'absolute', top: 12, right: 12, background: '#c9a84c', color: '#0d0b08', fontSize: 11, fontWeight: 800, padding: '4px 8px', borderRadius: 6 }}>-{discount}%</div>
                     )}
                   </div>
                   <div style={{ padding: '16px 20px 20px' }}>
@@ -99,7 +99,7 @@ export default async function HomePage() {
                         <span style={{ fontSize: 18, fontWeight: 800, color: '#c9a84c' }}>{deal.deal_price} kr</span>
                         {deal.original_price && <span style={{ fontSize: 12, color: '#555', textDecoration: 'line-through', marginLeft: 8 }}>{deal.original_price} kr</span>}
                       </div>
-                      <span style={{ background: '#1a1a1a', color: '#888', fontSize: 11, padding: '4px 10px', borderRadius: 6 }}>{deal.sold_count || 0} köpta</span>
+                      <span style={{ background: '#1e1b14', color: '#888', fontSize: 11, padding: '4px 10px', borderRadius: 6 }}>{deal.sold_count || 0} köpta</span>
                     </div>
                   </div>
                 </div>
