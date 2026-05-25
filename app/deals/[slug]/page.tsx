@@ -14,16 +14,36 @@ const CATEGORY_EMOJI = {
 }
 
 export async function generateMetadata({ params }) {
+  const resolvedParams = await Promise.resolve(params)
   const { data: deal } = await supabase
-    .from('deals').select('*').eq('slug', params.slug).single()
+    .from('deals').select('*').eq('slug', resolvedParams.slug).single()
   if (!deal) return { title: 'Deal hittades inte – Valör' }
+  
+  const discount = deal.original_price && deal.deal_price
+    ? Math.round((1 - deal.deal_price / deal.original_price) * 100)
+    : 0
+  const desc = deal.description
+    ? deal.description.substring(0, 155)
+    : `Spara ${discount}% på ${deal.title}. Från ${deal.deal_price} kr. Kurerade deals på Valör.`
+
   return {
-    title: deal.title + ' – Valör',
-    description: deal.description || 'Exklusiv deal på Valör',
+    title: `${deal.title} – ${discount > 0 ? discount + '% rabatt – ' : ''}Valör`,
+    description: desc,
+    keywords: [deal.title, deal.category, 'deal', 'erbjudande', 'rabatt', 'Valör', 'Sverige'].filter(Boolean).join(', '),
     openGraph: {
       title: deal.title,
-      description: deal.description || '',
+      description: desc,
       type: 'website',
+      url: `https://valor-se.vercel.app/deals/${resolvedParams.slug}`,
+      siteName: 'Valör',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: deal.title,
+      description: desc,
+    },
+    alternates: {
+      canonical: `https://valor-se.vercel.app/deals/${resolvedParams.slug}`,
     },
   }
 }
