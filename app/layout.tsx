@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="sv">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        <meta name="theme-color" content="#0a0a0a" />
+        <meta name="theme-color" content="#0d0b08" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <script
           type="application/ld+json"
@@ -95,7 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={inter.className} style={{ margin: 0, background: '#0a0a0a', color: '#fff' }}>
+      <body className={inter.className} style={{ margin: 0, background: '#0d0b08', color: '#fff' }}>
         {children}
       </body>
     </html>
