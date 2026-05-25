@@ -27,8 +27,9 @@ export const metadata = {
   description: 'Utforska exklusiva deals på spa, restauranger, upplevelser och mer.',
 }
 
-export default async function DealsPage({ searchParams }) {
-  const kategori = searchParams?.kategori || null
+export default async function DealsPage({ searchParams }: { searchParams: any }) {
+  const resolvedParams = await Promise.resolve(searchParams)
+  const kategori = resolvedParams?.kategori || null
 
   let query = supabase.from('deals').select('*').eq('status', 'active').order('created_at', { ascending: false })
   if (kategori && kategori !== 'alla') {
