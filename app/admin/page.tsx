@@ -61,8 +61,10 @@ export default function AdminPage() {
   async function sparaDeal() {
     setSparar(true)
     setMeddelande('')
+    const slug = form.titel.toLowerCase().replace(/[åä]/g, 'a').replace(/ö/g, 'o').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
     const data = {
       title: form.titel,
+      slug: slug,
       description: form.beskrivning,
       deal_price: parseFloat(form.pris) || 0,
       original_price: parseFloat(form.originalpris) || 0,
