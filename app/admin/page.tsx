@@ -69,6 +69,7 @@ export default function AdminPage() {
       deal_price: parseFloat(form.pris) || 0,
       original_price: parseFloat(form.originalpris) || 0,
       category: form.kategori,
+      status: 'active',
     }
     let fel = null
     if (visa && visa.id) {
