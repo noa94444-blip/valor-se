@@ -86,7 +86,7 @@ export async function POST(req) {
           customer_name,
           customer_email,
           customer_phone: customer_phone || null,
-          amount: parseFloat(amount) || 0,
+          total_price: parseFloat(amount) || 0,
           quantity: parseInt(quantity) || 1,
           status: 'pending',
           payment_method,
