@@ -59,6 +59,51 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ backgroundColor: '#F5F2ED', color: '#26231F' }} className="font-body antialiased">
         {children}
+        <footer style={{ background: '#26231F', color: '#F5F2ED', padding: '48px 24px 32px', marginTop: '0' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '32px', marginBottom: '40px' }}>
+              <div>
+                <div style={{ fontWeight: '800', fontSize: '20px', letterSpacing: '-0.5px', marginBottom: '12px' }}>VALÖR</div>
+                <p style={{ color: '#8B8680', fontSize: '13px', lineHeight: '1.6', maxWidth: '200px' }}>
+                  Premium deals i din stad. Kurerade erbjudanden för den kräsne.
+                </p>
+              </div>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', color: '#8B8680', marginBottom: '12px' }}>Utforska</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[['Alla deals', '/deals'], ['Om oss', '/om-oss'], ['Bli partner', '/avtal']].map(([label, href]) => (
+                    <a key={href} href={href} style={{ color: '#C8C4BE', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
+                      onMouseEnter={e => e.target.style.color = '#F5F2ED'}
+                      onMouseLeave={e => e.target.style.color = '#C8C4BE'}
+                    >{label}</a>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', color: '#8B8680', marginBottom: '12px' }}>Support</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[['Kontakta oss', '/kontakt'], ['Villkor', '/villkor'], ['Integritetspolicy', '/integritet']].map(([label, href]) => (
+                    <a key={href} href={href} style={{ color: '#C8C4BE', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
+                      onMouseEnter={e => e.target.style.color = '#F5F2ED'}
+                      onMouseLeave={e => e.target.style.color = '#C8C4BE'}
+                    >{label}</a>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', color: '#8B8680', marginBottom: '12px' }}>Kontakt</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <a href="mailto:support@valor.se" style={{ color: '#C8C4BE', textDecoration: 'none', fontSize: '13px' }}>support@valor.se</a>
+                  <a href="mailto:partner@valor.se" style={{ color: '#C8C4BE', textDecoration: 'none', fontSize: '13px' }}>partner@valor.se</a>
+                </div>
+              </div>
+            </div>
+            <div style={{ borderTop: '1px solid #3A3630', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <span style={{ color: '#6B6560', fontSize: '12px' }}>© 2026 Valör Sverige AB. Alla rättigheter förbehållna.</span>
+              <span style={{ color: '#6B6560', fontSize: '12px' }}>Byggt med ❤️ i Sverige</span>
+            </div>
+          </div>
+        </footer>
         <SupportChat />
       </body>
     </html>
