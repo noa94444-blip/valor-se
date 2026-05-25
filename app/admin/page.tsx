@@ -136,7 +136,7 @@ export default function AdminPage() {
     await laddaData()
   }
 
-  async function neka Merchant(id) {
+  async function nekaMerchant(id) {
     await supabase.from('merchants').update({ status: 'rejected' }).eq('id', id)
     await laddaData()
   }
