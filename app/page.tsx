@@ -89,8 +89,7 @@ export default async function HomePage() {
             return (
               <Link key={deal.id} href={`/deals/${deal.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                 <div style={{ background: '#111', border: '1px solid #1a1a1a', borderRadius: 16, overflow: 'hidden', transition: 'border-color 0.2s, transform 0.15s', cursor: 'pointer' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.transform = 'translateY(-3px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a1a1a'; e.currentTarget.style.transform = 'translateY(0)' }}>
+                  
                   {/* Card image placeholder */}
                   <div style={{ height: 140, background: 'linear-gradient(135deg, #1a1200, #2a1a00)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     <span style={{ fontSize: 40 }}>{deal.category === 'Bilservice' ? '🚗' : deal.category === 'Restaurang' ? '🍽️' : deal.category === 'Skönhet' ? '💆' : '✨'}</span>
