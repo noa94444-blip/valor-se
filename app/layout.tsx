@@ -73,8 +73,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {[['Alla deals', '/deals'], ['Om oss', '/om-oss'], ['Bli partner', '/avtal']].map(([label, href]) => (
                     <a key={href} href={href} style={{ color: '#C8C4BE', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
-                      onMouseEnter={e => e.target.style.color = '#F5F2ED'}
-                      onMouseLeave={e => e.target.style.color = '#C8C4BE'}
                     >{label}</a>
                   ))}
                 </div>
@@ -84,8 +82,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {[['Kontakta oss', '/kontakt'], ['Villkor', '/villkor'], ['Integritetspolicy', '/integritet']].map(([label, href]) => (
                     <a key={href} href={href} style={{ color: '#C8C4BE', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
-                      onMouseEnter={e => e.target.style.color = '#F5F2ED'}
-                      onMouseLeave={e => e.target.style.color = '#C8C4BE'}
                     >{label}</a>
                   ))}
                 </div>
