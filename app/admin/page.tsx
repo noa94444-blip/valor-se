@@ -67,9 +67,6 @@ export default function AdminPage() {
       deal_price: parseFloat(form.pris) || 0,
       original_price: parseFloat(form.originalpris) || 0,
       category: form.kategori,
-      location: form.stad,
-      status: 'active',
-      slug: form.titel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-)/g, '') + '-' + Date.now(),
     }
     let fel = null
     if (visa && visa.id) {
