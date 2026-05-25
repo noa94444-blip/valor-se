@@ -64,11 +64,12 @@ export default function AdminPage() {
     const data = {
       title: form.titel,
       description: form.beskrivning,
-      price: parseFloat(form.pris) || 0,
+      deal_price: parseFloat(form.pris) || 0,
       original_price: parseFloat(form.originalpris) || 0,
       category: form.kategori,
-      city: form.stad,
-      company: form.foretag,
+      location: form.stad,
+      status: 'active',
+      slug: form.titel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-)/g, '') + '-' + Date.now(),
     }
     let fel = null
     if (visa && visa.id) {
@@ -91,7 +92,7 @@ export default function AdminPage() {
 
   function oppnaRedigera(deal) {
     setVisa(deal)
-    setForm({ titel: deal.title || '', beskrivning: deal.description || '', pris: deal.price || '', originalpris: deal.original_price || '', kategori: deal.category || '', stad: deal.city || '', foretag: deal.company || '', aktiv: deal.active !== false })
+    setForm({ titel: deal.title || '', beskrivning: deal.description || '', pris: deal.deal_price || '', originalpris: deal.original_price || '', kategori: deal.category || '', stad: deal.city || '', foretag: deal.company || '', aktiv: deal.active !== false })
     setFlik('ny-deal')
   }
 
@@ -220,7 +221,7 @@ export default function AdminPage() {
                   </div>
                   <div style={{ color: '#999', fontSize: '13px' }}>{d.company || d.merchant_name || '-'} | {d.city || '-'} | {d.category || '-'}</div>
                   <div style={{ marginTop: '4px' }}>
-                    <span style={{ color: '#C4974A', fontWeight: 600 }}>{d.price || 0} kr</span>
+                    <span style={{ color: '#C4974A', fontWeight: 600 }}>{d.deal_price || 0} kr</span>
                     {d.original_price && <span style={{ color: '#555', fontSize: '13px', textDecoration: 'line-through', marginLeft: '8px' }}>{d.original_price} kr</span>}
                   </div>
                 </div>
