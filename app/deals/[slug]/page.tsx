@@ -141,7 +141,7 @@ export default async function DealPage({ params }) {
                   Vad ingår
                 </h3>
                 <div style={{ color: '#5C5650', lineHeight: 1.8 }}>
-                  {deal.includes.split('\n').map((line, i) => (
+                  {(typeof deal.includes === 'string' ? deal.includes.split('\n') : Array.isArray(deal.includes) ? deal.includes : []).map((line, i) => (
                     <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: '0.375rem' }}>
                       <span style={{ color: '#4A6741', fontWeight: 700, flexShrink: 0 }}>✓</span>
                       <span>{line}</span>
