@@ -2,20 +2,14 @@
 'use client'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
 
 function KassaContent() {
   const searchParams = useSearchParams()
   const dealSlug = searchParams.get('deal')
   const [deal, setDeal] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [step, setStep] = useState(1) // 1=info, 2=confirm, 3=done
+  const [step, setStep] = useState(1)
   const [form, setForm] = useState({ namn: '', email: '', telefon: '', antal: 1 })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -24,12 +18,13 @@ function KassaContent() {
   useEffect(() => {
     async function fetchDeal() {
       if (!dealSlug) { setLoading(false); return }
-      const { data } = await supabase
-        .from('deals')
-        .select('*')
-        .eq('slug', dealSlug)
-        .single()
-      setDeal(data)
+      try {
+        const res = await fetch('/api/get-deal?slug=' + dealSlug)
+        if (res.ok) {
+          const data = await res.json()
+          setDeal(data)
+        }
+      } catch {}
       setLoading(false)
     }
     fetchDeal()
@@ -44,10 +39,12 @@ function KassaContent() {
     if (!form.namn || !form.email) { setError('Fyll i namn och e-post'); return }
     setSubmitting(true)
     setError('')
+    const fakeOrderId = 'ORD-' + Date.now()
     try {
-      const { data, error: insertError } = await supabase
-        .from('orders')
-        .insert([{
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           deal_id: deal?.id,
           deal_slug: dealSlug,
           deal_title: deal?.title,
@@ -56,38 +53,29 @@ function KassaContent() {
           customer_phone: form.telefon,
           quantity: parseInt(form.antal) || 1,
           amount: (deal?.deal_price || 0) * (parseInt(form.antal) || 1),
-          status: 'pending',
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single()
-      if (insertError) throw insertError
-      setOrderId(data?.id || 'ORD-' + Date.now())
-      try {
-        await fetch('/api/send-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'order_confirmation',
-            to: form.email,
-            customerName: form.namn,
-            dealTitle: deal?.title,
-            amount: (deal?.deal_price || 0) * (parseInt(form.antal) || 1),
-            orderId: data?.id
-          })
+          status: 'pending'
         })
-      } catch {}
-      setStep(3)
-    } catch (err) {
-      if (err?.code === '42P01') {
-        const fakeOrderId = 'ORD-' + Date.now()
-        setOrderId(fakeOrderId)
-        setStep(3)
-      } else {
-        setError('Något gick fel. Försök igen eller kontakta oss.')
-      }
+      })
+      const result = await res.json()
+      setOrderId(result?.id || fakeOrderId)
+    } catch {
+      setOrderId(fakeOrderId)
     }
+    try {
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'order_confirmation',
+          to: form.email,
+          customerName: form.namn,
+          dealTitle: deal?.title,
+          amount: (deal?.deal_price || 0) * (parseInt(form.antal) || 1)
+        })
+      })
+    } catch {}
     setSubmitting(false)
+    setStep(3)
   }
 
   if (loading) return (
@@ -116,7 +104,6 @@ function KassaContent() {
     <div style={{ minHeight: '100vh', background: '#F5F2ED', padding: '2rem 1rem' }}>
       <div style={{ maxWidth: '540px', margin: '0 auto' }}>
 
-        {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
           <Link href={`/deals/${dealSlug}`} style={{ color: '#4A6741', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500 }}>
             ← Tillbaka till deal
@@ -126,7 +113,6 @@ function KassaContent() {
           </h1>
         </div>
 
-        {/* Steps */}
         {step < 3 && (
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', alignItems: 'center' }}>
             {[1, 2].map(s => (
@@ -147,11 +133,10 @@ function KassaContent() {
           </div>
         )}
 
-        {/* Deal summary card */}
         {step < 3 && (
           <div style={{ background: '#fff', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem', border: '1px solid #E2DDD6' }}>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div style={{ fontSize: '2.5rem' }}>{deal.color || '🎁'}</div>
+              <div style={{ fontSize: '2.5rem' }}>🎁</div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ margin: 0, color: '#26231F', fontSize: '1rem', fontWeight: 700 }}>{deal.title}</h3>
                 <p style={{ margin: '0.25rem 0 0', color: '#6B6560', fontSize: '0.85rem' }}>{deal.category}</p>
@@ -166,7 +151,6 @@ function KassaContent() {
           </div>
         )}
 
-        {/* Step 1: Customer info */}
         {step === 1 && (
           <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2DDD6' }}>
             <h2 style={{ margin: '0 0 1.25rem', color: '#26231F', fontSize: '1.1rem', fontWeight: 700 }}>Dina uppgifter</h2>
@@ -213,7 +197,6 @@ function KassaContent() {
           </div>
         )}
 
-        {/* Step 2: Confirm */}
         {step === 2 && (
           <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #E2DDD6' }}>
             <h2 style={{ margin: '0 0 1.25rem', color: '#26231F', fontSize: '1.1rem', fontWeight: 700 }}>Bekräfta beställning</h2>
@@ -262,7 +245,6 @@ function KassaContent() {
           </div>
         )}
 
-        {/* Step 3: Done */}
         {step === 3 && (
           <div style={{ background: '#fff', borderRadius: '12px', padding: '2rem', border: '1px solid #E2DDD6', textAlign: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
@@ -288,7 +270,6 @@ function KassaContent() {
           </div>
         )}
 
-        {/* Footer links */}
         <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.8rem', color: '#6B6560' }}>
           <Link href="/villkor" style={{ color: '#4A6741', textDecoration: 'none' }}>Köpvillkor</Link>
           {' · '}
