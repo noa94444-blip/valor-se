@@ -1,129 +1,225 @@
 // @ts-nocheck
-import type { Metadata } from 'next'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 
-export const metadata: Metadata = {
-  title: 'VALÖR – Premium deals i din stad',
-  description: 'Hitta de bästa lokala erbjudandena på bilservice, restauranger, skönhet och mer. Spara upp till 50% med VALÖR.',
-  openGraph: {
-    title: 'VALÖR – Premium deals i din stad',
-    description: 'Hitta de bästa lokala erbjudandena. Spara upp till 50% med VALÖR.',
-    images: ['/og-image.png']
-  }
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
-async function getDeals() {
-  const { data } = await supabase.from('deals').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(12)
-  return data || []
-}
+const CATEGORIES = [
+  { id: 'alla', label: 'Alla deals', emoji: '✨' },
+  { id: 'spa', label: 'Spa & Wellness', emoji: '🧖' },
+  { id: 'restaurang', label: 'Restauranger', emoji: '🍽️' },
+  { id: 'upplevelser', label: 'Upplevelser', emoji: '🎯' },
+  { id: 'sport', label: 'Sport & Fitness', emoji: '💪' },
+  { id: 'skönhet', label: 'Skönhet', emoji: '💅' },
+  { id: 'resor', label: 'Resor', emoji: '✈️' },
+]
 
 export default async function HomePage() {
-  const deals = await getDeals()
-  const categories = [...new Set(deals.map(d => d.category).filter(Boolean))]
+  let deals = []
+  try {
+    const { data } = await supabase
+      .from('deals')
+      .select('*')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(24)
+    deals = data || []
+  } catch (e) {
+    deals = []
+  }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#0d0b08', fontFamily: 'system-ui, sans-serif', color: '#fff' }}>
-      <nav style={{ borderBottom: '1px solid #1a1a1a', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, position: 'sticky', top: 0, background: 'rgba(10,10,10,0.95)', backdropFilter: 'blur(12px)', zIndex: 100 }}>
-        <Link href="/" style={{ fontSize: 22, fontWeight: 800, color: '#c9a84c', letterSpacing: '-1px', textDecoration: 'none' }}>VALÖR</Link>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Link href="/deals" style={{ color: '#888', fontSize: 13, textDecoration: 'none', padding: '8px 14px', borderRadius: 8 }}>Alla deals</Link>
-          <Link href="/konto" style={{ color: '#888', fontSize: 13, textDecoration: 'none', padding: '8px 14px', borderRadius: 8 }}>Konto</Link>
-          <Link href="/merchant" style={{ background: '#1e1b14', color: '#c9a84c', fontSize: 12, textDecoration: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, border: '1px solid #333' }}>Merchant</Link>
+    <main style={{ minHeight: '100vh', backgroundColor: '#F5F2ED', color: '#26231F' }}>
+      {/* NAV */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+        backgroundColor: 'rgba(245,242,237,0.95)',
+        backdropFilter: 'blur(8px)',
+        borderBottom: '1px solid rgba(180,170,155,0.4)',
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Link href="/" style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 600, color: '#26231F', textDecoration: 'none', letterSpacing: '-0.5px' }}>
+            VALÖR
+          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <Link href="/deals" style={{ fontSize: '0.875rem', fontWeight: 500, color: '#5C5650', textDecoration: 'none' }}>Utforska</Link>
+            <Link href="/deals?kategori=spa" style={{ fontSize: '0.875rem', fontWeight: 500, color: '#5C5650', textDecoration: 'none' }}>Spa</Link>
+            <Link href="/deals?kategori=restaurang" style={{ fontSize: '0.875rem', fontWeight: 500, color: '#5C5650', textDecoration: 'none' }}>Restauranger</Link>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Link href="/logga-in" style={{ fontSize: '0.875rem', fontWeight: 500, color: '#5C5650', textDecoration: 'none', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+              Logga in
+            </Link>
+            <Link href="/registrera" style={{
+              fontSize: '0.875rem', fontWeight: 600, color: '#fff', textDecoration: 'none',
+              padding: '0.5rem 1.25rem', borderRadius: '10px',
+              backgroundColor: '#4A6741',
+            }}>
+              Kom igång
+            </Link>
+          </div>
         </div>
       </nav>
 
-      <section style={{ padding: '80px 32px 60px', textAlign: 'center', maxWidth: 800, margin: '0 auto' }}>
-        <div style={{ display: 'inline-block', background: '#1a1200', border: '1px solid #c9a84c44', borderRadius: 100, padding: '6px 16px', fontSize: 12, color: '#c9a84c', fontWeight: 600, marginBottom: 24, letterSpacing: '1px', textTransform: 'uppercase' }}>Premium deals — Verified quality</div>
-        <h1 style={{ fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-2px', marginBottom: 20 }}>
-          Exklusiva deals i din stad
-        </h1>
-        <p style={{ fontSize: 18, color: '#888', lineHeight: 1.6, marginBottom: 36, maxWidth: 500, margin: '0 auto 36px' }}>Bilservice, restauranger, skönhet, spa och mer — upp till 50% rabatt på premiumtjänster nära dig.</p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/deals" style={{ background: '#c9a84c', color: '#0d0b08', padding: '14px 28px', borderRadius: 10, fontSize: 15, fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>Se alla deals</Link>
-          <Link href="/merchant" style={{ background: 'transparent', border: '1px solid #333', color: '#888', padding: '14px 24px', borderRadius: 10, fontSize: 14, textDecoration: 'none', display: 'inline-block' }}>Bli merchant</Link>
+      {/* HERO */}
+      <section style={{ paddingTop: '120px', paddingBottom: '64px', textAlign: 'center', background: 'linear-gradient(180deg, #EDE9E2 0%, #F5F2ED 100%)' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 1.5rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#fff', border: '1px solid #E2DDD6', borderRadius: '100px', padding: '0.375rem 1rem', marginBottom: '1.5rem', fontSize: '0.8rem', fontWeight: 500, color: '#8B6914' }}>
+            ✨ Kurerade premium deals
+          </div>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 700, color: '#1A1A1A', lineHeight: 1.15, marginBottom: '1.25rem', letterSpacing: '-1px' }}>
+            Premium deals<br />
+            <span style={{ color: '#8B6914' }}>i din stad</span>
+          </h1>
+          <p style={{ fontSize: '1.125rem', color: '#5C5650', maxWidth: '540px', margin: '0 auto 2.5rem', lineHeight: 1.7 }}>
+            Exklusiva erbjudanden på spa, restauranger, upplevelser och mycket mer — kurerade för dig som värdesätter kvalitet.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/deals" style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              backgroundColor: '#4A6741', color: '#fff', textDecoration: 'none',
+              padding: '0.875rem 2rem', borderRadius: '12px', fontWeight: 600, fontSize: '1rem',
+            }}>
+              Utforska alla deals →
+            </Link>
+            <Link href="/merchant" style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              backgroundColor: '#fff', color: '#26231F', textDecoration: 'none',
+              padding: '0.875rem 2rem', borderRadius: '12px', fontWeight: 600, fontSize: '1rem',
+              border: '1.5px solid #E2DDD6',
+            }}>
+              Bli partner
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section style={{ borderTop: '1px solid #1a1a1a', borderBottom: '1px solid #1a1a1a', padding: '24px 32px' }}>
-        <div style={{ display: 'flex', gap: 48, justifyContent: 'center', flexWrap: 'wrap' }}>
+      {/* STATS */}
+      <section style={{ borderTop: '1px solid #E2DDD6', borderBottom: '1px solid #E2DDD6', backgroundColor: '#fff' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0' }}>
           {[
-            { value: deals.length + '+', label: 'Aktiva deals' },
-            { value: '50%', label: 'Max rabatt' },
-            { value: categories.length + '+', label: 'Kategorier' },
-            { value: '15%', label: 'Kommission' }
-          ].map(s => (
-            <div key={s.label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#c9a84c' }}>{s.value}</div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{s.label}</div>
+            { v: deals.length + '+', l: 'Aktiva deals' },
+            { v: '85%', l: 'Till partnern' },
+            { v: '100%', l: 'Kurerade erbjudanden' },
+          ].map((s, i) => (
+            <div key={i} style={{ textAlign: 'center', padding: '1.5rem', borderRight: i < 2 ? '1px solid #E2DDD6' : 'none' }}>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#8B6914', fontFamily: 'Playfair Display, serif' }}>{s.v}</div>
+              <div style={{ fontSize: '0.8rem', color: '#8A8480', marginTop: '0.25rem', fontWeight: 500 }}>{s.l}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {categories.length > 0 && (
-        <section style={{ padding: '40px 32px 0' }}>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Link href="/deals" style={{ background: '#c9a84c', color: '#0d0b08', padding: '8px 18px', borderRadius: 100, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>Alla</Link>
-            {categories.map(cat => (
-              <Link key={cat} href={'/deals?kategori=' + encodeURIComponent(cat)} style={{ background: '#13110d', border: '1px solid #222', color: '#888', padding: '8px 18px', borderRadius: 100, fontSize: 12, textDecoration: 'none' }}>{cat}</Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section style={{ padding: '40px 32px 80px', maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Utvalda deals</h2>
-          <Link href="/deals" style={{ color: '#c9a84c', fontSize: 13, textDecoration: 'none' }}>Se alla</Link>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-          {deals.map(deal => {
-            const discount = deal.original_price && deal.deal_price ? Math.round((1 - deal.deal_price / deal.original_price) * 100) : 0
-            const emoji = deal.category === 'Bilservice' ? '🚗' : deal.category === 'Restaurang' ? '🍽️' : deal.category === 'Skönhet' ? '💆' : '✨'
-            return (
-              <Link key={deal.id} href={'/deals/' + deal.slug} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-                <div style={{ background: '#13110d', border: '1px solid #1a1a1a', borderRadius: 16, overflow: 'hidden', cursor: 'pointer' }}>
-                  <div style={{ height: 140, background: 'linear-gradient(135deg, #1a1200, #2a1a00)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                    <span style={{ fontSize: 40 }}>{emoji}</span>
-                    {discount > 0 && (
-                      <div style={{ position: 'absolute', top: 12, right: 12, background: '#c9a84c', color: '#0d0b08', fontSize: 11, fontWeight: 800, padding: '4px 8px', borderRadius: 6 }}>-{discount}%</div>
-                    )}
-                  </div>
-                  <div style={{ padding: '16px 20px 20px' }}>
-                    <div style={{ fontSize: 11, color: '#c9a84c', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, marginBottom: 8 }}>{deal.category || 'Deal'}</div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.3, marginBottom: 12 }}>{deal.title}</div>
-                    <div style={{ fontSize: 12, color: '#555', marginBottom: 14, lineHeight: 1.5 }}>{(deal.description || '').substring(0, 80)}{(deal.description || '').length > 80 ? '...' : ''}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span style={{ fontSize: 18, fontWeight: 800, color: '#c9a84c' }}>{deal.deal_price} kr</span>
-                        {deal.original_price && <span style={{ fontSize: 12, color: '#555', textDecoration: 'line-through', marginLeft: 8 }}>{deal.original_price} kr</span>}
-                      </div>
-                      <span style={{ background: '#1e1b14', color: '#888', fontSize: 11, padding: '4px 10px', borderRadius: 6 }}>{deal.sold_count || 0} köpta</span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            )
-          })}
-          {deals.length === 0 && (
-            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '80px 24px', color: '#444' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🌟</div>
-              <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>Deals kommer snart</div>
-            </div>
-          )}
+      {/* CATEGORIES */}
+      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '2.5rem 1.5rem 1rem' }}>
+        <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap' }}>
+          {CATEGORIES.map(cat => (
+            <Link key={cat.id} href={cat.id === 'alla' ? '/deals' : '/deals?kategori=' + cat.id} style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+              padding: '0.5rem 1rem', borderRadius: '100px', textDecoration: 'none',
+              fontSize: '0.875rem', fontWeight: 500,
+              backgroundColor: '#fff',
+              color: '#26231F',
+              border: '1.5px solid #E2DDD6',
+            }}>
+              <span>{cat.emoji}</span> {cat.label}
+            </Link>
+          ))}
         </div>
       </section>
 
-      <footer style={{ borderTop: '1px solid #1a1a1a', padding: '40px 32px', textAlign: 'center' }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: '#c9a84c', letterSpacing: '-0.5px', marginBottom: 12 }}>VALÖR</div>
-        <div style={{ color: '#444', fontSize: 13, marginBottom: 16 }}>Premium deals i din stad</div>
-        <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/deals" style={{ color: '#555', fontSize: 12, textDecoration: 'none' }}>Deals</Link>
-          <Link href="/merchant" style={{ color: '#555', fontSize: 12, textDecoration: 'none' }}>Merchant</Link>
-          <Link href="/konto" style={{ color: '#555', fontSize: 12, textDecoration: 'none' }}>Konto</Link>
+      {/* DEALS GRID */}
+      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem 1.5rem 4rem' }}>
+        <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 600, color: '#26231F' }}>
+            {deals.length > 0 ? 'Utvalda deals' : 'Inga deals just nu'}
+          </h2>
+          {deals.length > 0 && (
+            <Link href="/deals" style={{ fontSize: '0.875rem', color: '#8B6914', textDecoration: 'none', fontWeight: 500 }}>
+              Se alla →
+            </Link>
+          )}
         </div>
-        <div style={{ color: '#2a2a2a', fontSize: 11, marginTop: 20 }}>© 2025 VALÖR. 15% kommission på alla affärer.</div>
+        {deals.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+            {deals.map(deal => {
+              const discount = deal.original_price && deal.deal_price
+                ? Math.round((1 - deal.deal_price / deal.original_price) * 100)
+                : null
+              return (
+                <Link key={deal.id} href={'/deals/' + deal.slug} style={{ textDecoration: 'none' }}>
+                  <div style={{
+                    backgroundColor: '#fff', borderRadius: '16px', overflow: 'hidden',
+                    border: '1.5px solid #E2DDD6',
+                    transition: 'box-shadow 0.2s',
+                  }}>
+                    <div style={{ backgroundColor: '#EDE9E2', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                      <span style={{ fontSize: '3.5rem' }}>
+                        {deal.category === 'spa' ? '🧖' : deal.category === 'restaurang' ? '🍽️' : deal.category === 'upplevelser' ? '🎯' : deal.category === 'sport' ? '💪' : '✨'}
+                      </span>
+                      {discount && (
+                        <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', backgroundColor: '#4A6741', color: '#fff', borderRadius: '100px', padding: '0.25rem 0.625rem', fontSize: '0.75rem', fontWeight: 700 }}>
+                          -{discount}%
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ padding: '1.125rem' }}>
+                      {deal.category && (
+                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B6914', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.375rem' }}>
+                          {deal.category}
+                        </div>
+                      )}
+                      <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#26231F', marginBottom: '0.625rem', lineHeight: 1.4 }}>
+                        {deal.title}
+                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#26231F' }}>
+                          {deal.deal_price ? deal.deal_price.toLocaleString('sv-SE') + ' kr' : 'Se pris'}
+                        </span>
+                        {deal.original_price && (
+                          <span style={{ fontSize: '0.875rem', color: '#8A8480', textDecoration: 'line-through' }}>
+                            {deal.original_price.toLocaleString('sv-SE')} kr
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '4rem', backgroundColor: '#fff', borderRadius: '16px', border: '1.5px solid #E2DDD6' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+            <p style={{ color: '#5C5650', marginBottom: '1.5rem' }}>Inga aktiva deals just nu — kom tillbaka snart!</p>
+            <Link href="/merchant" style={{ color: '#8B6914', fontWeight: 500, textDecoration: 'none' }}>
+              Är du partner? Lägg till en deal →
+            </Link>
+          </div>
+        )}
+      </section>
+
+      {/* FOOTER */}
+      <footer style={{ backgroundColor: '#EDE9E2', borderTop: '1px solid #E2DDD6', padding: '3rem 1.5rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', fontWeight: 600, color: '#26231F', marginBottom: '0.375rem' }}>VALÖR</div>
+            <p style={{ fontSize: '0.875rem', color: '#8A8480', maxWidth: '280px' }}>
+              Premium deals kurerade för den kräsne.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+            <Link href="/deals" style={{ fontSize: '0.875rem', color: '#5C5650', textDecoration: 'none' }}>Utforska</Link>
+            <Link href="/merchant" style={{ fontSize: '0.875rem', color: '#5C5650', textDecoration: 'none' }}>Bli partner</Link>
+            <Link href="/admin" style={{ fontSize: '0.875rem', color: '#5C5650', textDecoration: 'none' }}>Admin</Link>
+          </div>
+          <div style={{ fontSize: '0.8rem', color: '#8A8480' }}>
+            © 2025 Valör. Alla rättigheter förbehållna.
+          </div>
+        </div>
       </footer>
     </main>
   )
