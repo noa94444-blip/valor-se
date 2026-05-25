@@ -1,189 +1,175 @@
-'use client'
+// @ts-nocheck
+import { createClient } from '@supabase/supabase-js'
+import Link from 'next/link'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
-const G = '#1A3A2A'
-const AU = '#C4974A'
-const IV = '#F5F2ED'
-const WH = '#FFFFFF'
-const GR = '#6B7280'
-const LG = '#E8E4DE'
+const CATEGORIES = [
+  { id: 'alla', label: 'Alla deals', emoji: '✨' },
+  { id: 'spa', label: 'Spa & Wellness', emoji: '🧖' },
+  { id: 'restaurang', label: 'Restauranger', emoji: '🍽️' },
+  { id: 'upplevelser', label: 'Upplevelser', emoji: '🎯' },
+  { id: 'sport', label: 'Sport & Fitness', emoji: '💪' },
+  { id: 'skönhet', label: 'Skönhet', emoji: '💅' },
+  { id: 'resor', label: 'Resor', emoji: '✈️' },
+]
 
-type Deal = {
-  id: string
-  title: string
-  slug: string
-  description: string
-  original_price: number
-  deal_price: number
-  image_url?: string | null
-  category: string
-  city?: string
-  valid_until: string | null
-  status: string
-  sold_count: number
-  merchants?: {
-    name: string
-    address: string | null
-    city: string
-    logo_url?: string | null
-  }
+const CATEGORY_EMOJI = {
+  spa: '🧖', restaurang: '🍽️', upplevelser: '🎯',
+  sport: '💪', skönhet: '💅', resor: '✈️',
 }
 
-const CATEGORIES = ['Alla kategorier', 'Skonhet', 'Mat och Dryck', 'Halsa', 'Fordon', 'Upplevelser', 'Shopping']
-const CITIES = ['Alla städer', 'Stockholm', 'Göteborg', 'Malmö', 'Uppsala', 'Västerås']
+export const metadata = {
+  title: 'Alla deals – Valör',
+  description: 'Utforska exklusiva deals på spa, restauranger, upplevelser och mer.',
+}
 
-export default function DealsPage() {
-  const [deals, setDeals] = useState<Deal[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('Alla kategorier')
-  const [selectedCity, setSelectedCity] = useState('Alla städer')
-  const [sortBy, setSortBy] = useState('newest')
+export default async function DealsPage({ searchParams }) {
+  const kategori = searchParams?.kategori || null
 
-  useEffect(() => {
-    fetchDeals()
-  }, [])
-
-  async function fetchDeals() {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('deals')
-      .select('*, merchants(name, address, city, logo_url, slug)')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching deals:', error)
-    } else {
-      setDeals(data || [])
-    }
-    setLoading(false)
+  let query = supabase.from('deals').select('*').eq('status', 'active').order('created_at', { ascending: false })
+  if (kategori && kategori !== 'alla') {
+    query = query.eq('category', kategori)
   }
-
-  const filtered = deals
-    .filter(d => {
-      const matchSearch = !search || d.title.toLowerCase().includes(search.toLowerCase()) || (d.merchants?.name || '').toLowerCase().includes(search.toLowerCase())
-      const matchCat = selectedCategory === 'Alla kategorier' || d.category === selectedCategory
-      const matchCity = selectedCity === 'Alla städer' || (d.merchants?.city || '').includes(selectedCity) || (d.city || '').includes(selectedCity)
-      return matchSearch && matchCat && matchCity
-    })
-    .sort((a, b) => {
-      if (sortBy === 'price_asc') return a.deal_price - b.deal_price
-      if (sortBy === 'price_desc') return b.deal_price - a.deal_price
-      if (sortBy === 'discount') return (b.original_price - b.deal_price) - (a.original_price - a.deal_price)
-      return 0
-    })
+  const { data: deals } = await query.limit(48)
+  const allDeals = deals || []
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: IV, fontFamily: 'Inter, sans-serif' }}>
-      {/* Hero */}
-      <div style={{ backgroundColor: G, padding: '60px 24px 40px', textAlign: 'center' }}>
-        <div style={{ fontSize: 11, letterSpacing: 4, color: AU, textTransform: 'uppercase', marginBottom: 12 }}>Exklusiva erbjudanden</div>
-        <h1 style={{ fontSize: 42, fontFamily: 'Georgia, serif', color: WH, fontWeight: 400, margin: '0 0 16px' }}>Dagens deals</h1>
-        <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 16, margin: '0 auto', maxWidth: 500 }}>
-          Handplockade erbjudanden från Stockholms bästa restauranger, spaanläggningar och butiker
-        </p>
-      </div>
-
-      {/* Filters */}
-      <div style={{ backgroundColor: WH, borderBottom: `1px solid ${LG}`, padding: '20px 24px', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder="Sök deals eller restauranger..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ flex: '1 1 240px', padding: '10px 16px', border: `1px solid ${LG}`, borderRadius: 6, fontSize: 14, outline: 'none', fontFamily: 'Inter, sans-serif' }}
-          />
-          <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}
-            style={{ padding: '10px 16px', border: `1px solid ${LG}`, borderRadius: 6, fontSize: 14, backgroundColor: WH, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-            {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-          </select>
-          <select value={selectedCity} onChange={e => setSelectedCity(e.target.value)}
-            style={{ padding: '10px 16px', border: `1px solid ${LG}`, borderRadius: 6, fontSize: 14, backgroundColor: WH, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-            {CITIES.map(c => <option key={c}>{c}</option>)}
-          </select>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-            style={{ padding: '10px 16px', border: `1px solid ${LG}`, borderRadius: 6, fontSize: 14, backgroundColor: WH, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-            <option value="newest">Nyast</option>
-            <option value="price_asc">Lägst pris</option>
-            <option value="price_desc">Högst pris</option>
-            <option value="discount">Högst rabatt</option>
-          </select>
-          <span style={{ color: GR, fontSize: 13 }}>{filtered.length} deals</span>
+    <main style={{ minHeight: '100vh', backgroundColor: '#F5F2ED', color: '#26231F' }}>
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+        backgroundColor: 'rgba(245,242,237,0.95)', backdropFilter: 'blur(8px)',
+        borderBottom: '1px solid #E2DDD6',
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Link href="/" style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 600, color: '#26231F', textDecoration: 'none' }}>VALÖR</Link>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            <Link href="/logga-in" style={{ fontSize: '0.875rem', color: '#5C5650', textDecoration: 'none' }}>Logga in</Link>
+            <Link href="/registrera" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#fff', backgroundColor: '#4A6741', textDecoration: 'none', padding: '0.5rem 1.25rem', borderRadius: '10px' }}>Kom igång</Link>
+          </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Grid */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: GR }}>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>⟳</div>
-            <p>Laddar deals...</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: GR }}>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>✦</div>
-            <p>Inga deals matchar dina filter</p>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
-            {filtered.map(deal => {
-              const discountPct = deal.original_price > 0 ? Math.round((1 - deal.deal_price / deal.original_price) * 100) : 0
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '84px 1.5rem 4rem' }}>
+        <div style={{ marginBottom: '2rem', paddingTop: '1.5rem' }}>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: 700, color: '#1A1A1A', marginBottom: '0.5rem' }}>
+            {kategori && kategori !== 'alla' ? CATEGORIES.find(c => c.id === kategori)?.label || 'Deals' : 'Alla deals'}
+          </h1>
+          <p style={{ color: '#5C5650', fontSize: '1rem' }}>
+            {allDeals.length} {allDeals.length === 1 ? 'deal' : 'deals'} tillgängliga
+          </p>
+        </div>
+
+        {/* Category filters */}
+        <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
+          {CATEGORIES.map(cat => {
+            const isActive = (!kategori && cat.id === 'alla') || kategori === cat.id
+            return (
+              <Link key={cat.id} href={cat.id === 'alla' ? '/deals' : '/deals?kategori=' + cat.id} style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+                padding: '0.5rem 1rem', borderRadius: '100px', textDecoration: 'none',
+                fontSize: '0.875rem', fontWeight: isActive ? 700 : 500,
+                backgroundColor: isActive ? '#4A6741' : '#fff',
+                color: isActive ? '#fff' : '#26231F',
+                border: isActive ? '1.5px solid #4A6741' : '1.5px solid #E2DDD6',
+              }}>
+                <span>{cat.emoji}</span> {cat.label}
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* Deals grid */}
+        {allDeals.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+            {allDeals.map(deal => {
+              const discount = deal.original_price && deal.deal_price
+                ? Math.round((1 - deal.deal_price / deal.original_price) * 100)
+                : null
               return (
-                <a key={deal.id} href={`/deals/${deal.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
-                  <div style={{ backgroundColor: WH, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 8px rgba(0,0,0,0.06)' }}>
-                    {/* Image */}
-                    <div style={{ height: 200, backgroundColor: G, position: 'relative', overflow: 'hidden' }}>
-                      {deal.image_url ? (
-                        <img src={deal.image_url} alt={deal.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, opacity: 0.4, color: WH }}>✦</div>
-                      )}
-                      {discountPct > 0 && (
-                        <div style={{ position: 'absolute', top: 12, right: 12, backgroundColor: AU, color: WH, padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-                          -{discountPct}%
+                <Link key={deal.id} href={'/deals/' + deal.slug} style={{ textDecoration: 'none' }}>
+                  <div style={{
+                    backgroundColor: '#fff', borderRadius: '16px', overflow: 'hidden',
+                    border: '1.5px solid #E2DDD6', transition: 'transform 0.2s',
+                  }}>
+                    <div style={{ backgroundColor: '#EDE9E2', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                      <span style={{ fontSize: '4rem' }}>{CATEGORY_EMOJI[deal.category] || '✨'}</span>
+                      {discount && (
+                        <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', backgroundColor: '#4A6741', color: '#fff', borderRadius: '100px', padding: '0.25rem 0.625rem', fontSize: '0.75rem', fontWeight: 700 }}>
+                          -{discount}%
                         </div>
                       )}
-                      <div style={{ position: 'absolute', top: 12, left: 12, backgroundColor: 'rgba(0,0,0,0.5)', color: WH, padding: '4px 10px', borderRadius: 20, fontSize: 11 }}>
-                        {deal.category}
-                      </div>
+                      {deal.featured && (
+                        <div style={{ position: 'absolute', top: '0.75rem', left: '0.75rem', backgroundColor: '#8B6914', color: '#fff', borderRadius: '100px', padding: '0.2rem 0.5rem', fontSize: '0.65rem', fontWeight: 700 }}>
+                          UTVALD
+                        </div>
+                      )}
                     </div>
-                    {/* Content */}
-                    <div style={{ padding: '20px' }}>
-                      {deal.merchants && (
-                        <div style={{ fontSize: 11, color: AU, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>
-                          {deal.merchants.name}
+                    <div style={{ padding: '1.125rem' }}>
+                      {deal.category && (
+                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B6914', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.375rem' }}>
+                          {deal.category}
                         </div>
                       )}
-                      <h3 style={{ fontSize: 17, color: G, fontFamily: 'Georgia, serif', fontWeight: 400, margin: '0 0 8px', lineHeight: 1.4 }}>{deal.title}</h3>
-                      <p style={{ fontSize: 13, color: GR, margin: '0 0 16px', lineHeight: 1.5 }}>{deal.description?.substring(0, 80)}...</p>
+                      <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#26231F', marginBottom: '0.75rem', lineHeight: 1.4 }}>
+                        {deal.title}
+                      </h2>
+                      {deal.description && (
+                        <p style={{ fontSize: '0.8rem', color: '#8A8480', marginBottom: '0.75rem', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {deal.description}
+                        </p>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                          <span style={{ fontSize: 22, fontWeight: 700, color: G }}>{deal.deal_price} kr</span>
-                          {deal.original_price > deal.deal_price && (
-                            <span style={{ fontSize: 13, color: GR, textDecoration: 'line-through', marginLeft: 8 }}>{deal.original_price} kr</span>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#26231F' }}>
+                            {deal.deal_price ? deal.deal_price.toLocaleString('sv-SE') + ' kr' : 'Gratis'}
+                          </span>
+                          {deal.original_price && (
+                            <span style={{ fontSize: '0.8rem', color: '#8A8480', textDecoration: 'line-through' }}>
+                              {deal.original_price.toLocaleString('sv-SE')}
+                            </span>
                           )}
                         </div>
-                        <div style={{ backgroundColor: G, color: AU, padding: '8px 16px', borderRadius: 6, fontSize: 13, fontWeight: 500 }}>
-                          Köp nu
-                        </div>
+                        {deal.sold_count > 0 && (
+                          <span style={{ fontSize: '0.7rem', color: '#8A8480' }}>{deal.sold_count} köpta</span>
+                        )}
                       </div>
-                      {deal.merchants && (
-                        <div style={{ marginTop: 12, fontSize: 12, color: GR }}>📍 {deal.merchants.city}</div>
-                      )}
                     </div>
                   </div>
-                </a>
+                </Link>
               )
             })}
           </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '5rem 2rem', backgroundColor: '#fff', borderRadius: '20px', border: '1.5px solid #E2DDD6' }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1.25rem' }}>🔍</div>
+            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', marginBottom: '0.75rem', color: '#26231F' }}>
+              Inga deals i denna kategori
+            </h2>
+            <p style={{ color: '#5C5650', marginBottom: '1.5rem' }}>
+              Prova en annan kategori eller kom tillbaka snart!
+            </p>
+            <Link href="/deals" style={{ color: '#8B6914', fontWeight: 500, textDecoration: 'none' }}>
+              Visa alla deals →
+            </Link>
+          </div>
         )}
       </div>
-    </div>
+
+      <footer style={{ backgroundColor: '#EDE9E2', borderTop: '1px solid #E2DDD6', padding: '2.5rem 1.5rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Link href="/" style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.125rem', fontWeight: 600, color: '#26231F', textDecoration: 'none' }}>VALÖR</Link>
+          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <Link href="/villkor" style={{ fontSize: '0.875rem', color: '#5C5650', textDecoration: 'none' }}>Köpvillkor</Link>
+            <Link href="/integritet" style={{ fontSize: '0.875rem', color: '#5C5650', textDecoration: 'none' }}>Integritetspolicy</Link>
+            <Link href="/merchant" style={{ fontSize: '0.875rem', color: '#5C5650', textDecoration: 'none' }}>Bli partner</Link>
+          </div>
+          <div style={{ fontSize: '0.8rem', color: '#8A8480' }}>© 2025 Valör</div>
+        </div>
+      </footer>
+    </main>
   )
 }
