@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
+—import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 // Protected routes that require authentication
