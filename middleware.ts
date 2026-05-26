@@ -65,19 +65,12 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect /admin - requires login AND admin role
+  // Protect /admin - requires login (role check handled inside admin page)
   if (ADMIN_ROUTES.some(route => pathname.startsWith(route))) {
     if (!user) {
       const loginUrl = new URL('/logga-in', request.url)
       loginUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(loginUrl)
-    }
-    // Check role in app_metadata (server-side) or user_metadata
-    const role =
-      (user.app_metadata?.role as string | undefined) ||
-      (user.user_metadata?.role as string | undefined)
-    if (role !== 'admin') {
-      return NextResponse.redirect(new URL('/?error=unauthorized', request.url))
     }
   }
 
