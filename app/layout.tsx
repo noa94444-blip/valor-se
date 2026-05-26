@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 import { useState } from 'react'
 import { Inter } from 'next/font/google'
@@ -7,21 +6,22 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sv">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Valör – Premium deals i din stad</title>
-        <meta name="description" content="Exklusiva erbjudanden på spa, restauranger, upplevelser och mycket mer. Kurerade premium deals i din stad." />
+        <title>Valor - Premium deals i din stad</title>
+        <meta name="description" content="Exklusiva erbjudanden pa spa, restauranger, upplevelser och mycket mer. Kurerade premium deals i din stad." />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="canonical" href="https://xn--valr-ppa.se" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
           '@context': 'https://schema.org',
           '@type': 'Organization',
-          name: 'Valör',
-          url: 'https://xn--valr-7qa.se',
-          description: 'Exklusiva erbjudanden på spa, restauranger och upplevelser.',
+          name: 'Valor',
+          url: 'https://xn--valr-ppa.se',
+          description: 'Exklusiva erbjudanden pa spa, restauranger och upplevelser.',
           vatID: '559548-1556',
         }) }} />
       </head>
@@ -51,7 +51,7 @@ function NavBar() {
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', height: '64px',
         }}>
-          {/* Hamburger — mobil */}
+          {/* Hamburger - mobil */}
           <button
             onClick={() => setMenuOpen(true)}
             style={{
@@ -60,9 +60,9 @@ function NavBar() {
               fontSize: '22px',
             }}
             className="hamburger-btn"
-            aria-label="Öppna meny"
+            aria-label="Oppna meny"
           >
-            ☰
+            &#9776;
           </button>
 
           {/* Logo */}
@@ -72,34 +72,34 @@ function NavBar() {
               fontFamily: 'Georgia, serif',
               background: 'linear-gradient(135deg, #C9A84C 0%, #F0D080 50%, #C9A84C 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-            }}>VALÖR</span>
+            }}>VALOR</span>
           </Link>
 
           {/* Desktop nav */}
           <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
             <Link href="/deals" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Utforska</Link>
-            <Link href="/deals?kategori=Halsa" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Spa & Hälsa</Link>
+            <Link href="/deals?kategori=Halsa" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Spa & Halsa</Link>
             <Link href="/deals?kategori=Restaurang" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Restauranger</Link>
             <Link href="/om-oss" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Om oss</Link>
           </div>
 
           {/* CTA */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Link href="/logga-in" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500', padding: '8px 16px' }} className="desktop-only">
-              Logga in
+            <Link href="/konto" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500', padding: '8px 16px' }} className="desktop-only">
+              Mitt konto
             </Link>
             <Link href="/deals" style={{
               background: 'linear-gradient(135deg, #C9A84C 0%, #8B6914 100%)',
               color: '#0A0806', textDecoration: 'none', fontSize: '13px', fontWeight: '800',
               padding: '10px 20px', borderRadius: '100px', whiteSpace: 'nowrap',
             }}>
-              Kom igång
+              Kom igang
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Drawer — vänster sida */}
+      {/* Mobile Drawer overlay */}
       {menuOpen && (
         <div
           onClick={() => setMenuOpen(false)}
@@ -109,6 +109,8 @@ function NavBar() {
           }}
         />
       )}
+
+      {/* Mobile Drawer - vanster sida */}
       <div style={{
         position: 'fixed', top: 0, left: menuOpen ? 0 : '-320px',
         width: '300px', height: '100vh',
@@ -123,121 +125,191 @@ function NavBar() {
         {/* Drawer header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '20px 24px', borderBottom: '1px solid rgba(201,168,76,0.1)',
+          padding: '20px 24px',
+          borderBottom: '1px solid rgba(201,168,76,0.15)',
         }}>
           <span style={{
-            fontSize: '20px', fontWeight: '900', letterSpacing: '3px',
+            fontSize: '18px', fontWeight: '900', letterSpacing: '4px',
             fontFamily: 'Georgia, serif',
-            background: 'linear-gradient(135deg, #C9A84C, #F0D080)',
+            background: 'linear-gradient(135deg, #C9A84C 0%, #F0D080 50%, #C9A84C 100%)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-          }}>VALÖR</span>
+          }}>VALOR</span>
           <button
             onClick={() => setMenuOpen(false)}
-            style={{ background: 'none', border: 'none', color: '#6B6560', fontSize: '24px', cursor: 'pointer' }}
-          >✕</button>
+            style={{ background: 'none', border: 'none', color: '#9B9589', cursor: 'pointer', fontSize: '24px', lineHeight: 1 }}
+            aria-label="Stang meny"
+          >
+            &times;
+          </button>
         </div>
 
-        {/* Drawer links */}
-        <div style={{ padding: '16px 0', flex: 1 }}>
+        {/* Nav links */}
+        <nav style={{ flex: 1, padding: '16px 0' }}>
           {[
-            { href: '/deals', icon: '🔍', label: 'Alla deals' },
-            { href: '/deals?kategori=Halsa', icon: '🧘', label: 'Spa & Hälsa' },
-            { href: '/deals?kategori=Skonhet', icon: '💆', label: 'Skönhet' },
-            { href: '/deals?kategori=Restaurang', icon: '🍽️', label: 'Restauranger' },
-            { href: '/deals?kategori=Upplevelse', icon: '✨', label: 'Upplevelser' },
-            { href: '/deals?kategori=Hotell', icon: '🏨', label: 'Hotell' },
-            { href: '/om-oss', icon: '💎', label: 'Om oss' },
-            { href: '/kontakt', icon: '📧', label: 'Kontakt' },
-          ].map((item) => (
+            { href: '/deals', label: 'Utforska deals' },
+            { href: '/deals?kategori=Halsa', label: 'Spa & Halsa' },
+            { href: '/deals?kategori=Restaurang', label: 'Restauranger' },
+            { href: '/deals?kategori=Upplevelse', label: 'Upplevelser' },
+            { href: '/om-oss', label: 'Om oss' },
+          ].map(({ href, label }) => (
             <Link
-              key={item.href}
-              href={item.href}
+              key={href}
+              href={href}
               onClick={() => setMenuOpen(false)}
               style={{
-                display: 'flex', alignItems: 'center', gap: '16px',
-                padding: '14px 24px', textDecoration: 'none',
-                color: '#F5F2ED', fontSize: '15px', fontWeight: '500',
+                display: 'block', padding: '14px 24px',
+                color: '#C8C4BC', textDecoration: 'none', fontSize: '15px', fontWeight: '500',
                 borderBottom: '1px solid rgba(255,255,255,0.04)',
+                transition: 'color 0.2s',
               }}
             >
-              <span style={{ fontSize: '20px', width: '28px', textAlign: 'center' }}>{item.icon}</span>
-              {item.label}
+              {label}
             </Link>
           ))}
-        </div>
 
-        {/* Drawer footer */}
-        <div style={{ padding: '24px', borderTop: '1px solid rgba(201,168,76,0.1)' }}>
-          <Link href="/logga-in" onClick={() => setMenuOpen(false)} style={{
-            display: 'block', textAlign: 'center', padding: '12px',
-            border: '1px solid rgba(201,168,76,0.3)', borderRadius: '100px',
-            color: '#C9A84C', textDecoration: 'none', fontSize: '14px', fontWeight: '700',
-            marginBottom: '12px',
-          }}>Logga in</Link>
-          <Link href="/merchant" onClick={() => setMenuOpen(false)} style={{
-            display: 'block', textAlign: 'center', padding: '12px',
-            background: 'linear-gradient(135deg, #C9A84C, #8B6914)',
-            borderRadius: '100px', color: '#0A0806', textDecoration: 'none',
-            fontSize: '14px', fontWeight: '800',
-          }}>Bli partner</Link>
+          {/* Divider */}
+          <div style={{ height: '1px', backgroundColor: 'rgba(201,168,76,0.15)', margin: '12px 0' }} />
+
+          {/* Account links */}
+          <Link
+            href="/konto"
+            onClick={() => setMenuOpen(false)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '14px 24px',
+              color: '#C9A84C', textDecoration: 'none', fontSize: '15px', fontWeight: '600',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
+            }}
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            Mitt konto
+          </Link>
+
+          <Link
+            href="/logga-in"
+            onClick={() => setMenuOpen(false)}
+            style={{
+              display: 'block', padding: '14px 24px',
+              color: '#9B9589', textDecoration: 'none', fontSize: '15px', fontWeight: '500',
+            }}
+          >
+            Logga in / Registrera
+          </Link>
+        </nav>
+
+        {/* Bottom CTA */}
+        <div style={{ padding: '20px 24px', borderTop: '1px solid rgba(201,168,76,0.1)' }}>
+          <Link
+            href="/deals"
+            onClick={() => setMenuOpen(false)}
+            style={{
+              display: 'block', textAlign: 'center',
+              background: 'linear-gradient(135deg, #C9A84C 0%, #8B6914 100%)',
+              color: '#0A0806', textDecoration: 'none', fontSize: '13px', fontWeight: '800',
+              padding: '14px 20px', borderRadius: '100px',
+            }}
+          >
+            Se alla deals
+          </Link>
         </div>
       </div>
 
-      <style>{`
-        @media (max-width: 768px) {
+      {/* Mobile hamburger CSS */}
+      <style>{
+        `@media (max-width: 768px) {
           .hamburger-btn { display: flex !important; }
           .desktop-nav { display: none !important; }
           .desktop-only { display: none !important; }
-        }
-      `}</style>
+        }`
+      }</style>
     </>
   )
 }
 
 function Footer() {
   return (
-    <footer style={{ backgroundColor: '#050403', borderTop: '1px solid rgba(201,168,76,0.1)', padding: '60px 24px 30px' }}>
+    <footer style={{
+      backgroundColor: '#080604',
+      borderTop: '1px solid rgba(201,168,76,0.12)',
+      padding: '48px 24px 32px',
+      marginTop: '80px',
+    }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px', marginBottom: '48px' }}>
+          {/* Brand */}
           <div>
-            <span style={{
-              fontSize: '20px', fontWeight: '900', letterSpacing: '3px', fontFamily: 'Georgia, serif',
-              background: 'linear-gradient(135deg, #C9A84C, #F0D080)',
+            <div style={{
+              fontSize: '20px', fontWeight: '900', letterSpacing: '4px',
+              fontFamily: 'Georgia, serif',
+              background: 'linear-gradient(135deg, #C9A84C 0%, #F0D080 50%, #C9A84C 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-            }}>VALÖR</span>
-            <p style={{ color: '#6B6560', fontSize: '13px', marginTop: '12px', lineHeight: '1.7' }}>
-              Premium deals kurerade för dig som värdesätter kvalitet och upplevelser.
+              marginBottom: '12px',
+            }}>VALOR</div>
+            <p style={{ color: '#5C5650', fontSize: '13px', lineHeight: '1.7', margin: 0 }}>
+              Sveriges modernaste premium marketplace for exklusiva upplevelser och deals.
             </p>
-            <p style={{ color: '#4A4540', fontSize: '12px', marginTop: '12px' }}>Org.nr: 559548-1556</p>
           </div>
+
+          {/* Discover */}
           <div>
-            <h3 style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '16px' }}>Utforska</h3>
+            <h4 style={{ color: '#C9A84C', fontSize: '11px', fontWeight: '700', letterSpacing: '2px', marginBottom: '16px', textTransform: 'uppercase' }}>
+              UTFORSKA
+            </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[['/', 'Hem'], ['/deals', 'Alla deals'], ['/deals?kategori=Halsa', 'Spa & Hälsa'], ['/deals?kategori=Restaurang', 'Restauranger'], ['/deals?kategori=Upplevelse', 'Upplevelser']].map(([href, label]) => (
+              {[
+                { href: '/deals', label: 'Alla deals' },
+                { href: '/deals?kategori=Halsa', label: 'Spa & Halsa' },
+                { href: '/deals?kategori=Restaurang', label: 'Restauranger' },
+                { href: '/deals?kategori=Upplevelse', label: 'Upplevelser' },
+              ].map(({ href, label }) => (
                 <Link key={href} href={href} style={{ color: '#6B6560', textDecoration: 'none', fontSize: '13px' }}>{label}</Link>
               ))}
             </div>
           </div>
+
+          {/* Company */}
           <div>
-            <h3 style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '16px' }}>Företag</h3>
+            <h4 style={{ color: '#C9A84C', fontSize: '11px', fontWeight: '700', letterSpacing: '2px', marginBottom: '16px', textTransform: 'uppercase' }}>
+              FORETAG
+            </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[['/om-oss', 'Om oss'], ['/merchant', 'Bli partner'], ['/kontakt', 'Kontakt']].map(([href, label]) => (
+              {[
+                { href: '/om-oss', label: 'Om oss' },
+                { href: '/kontakt', label: 'Kontakt' },
+                { href: '/integritet', label: 'Integritetspolicy' },
+                { href: '/villkor', label: 'Anvandardvilkor' },
+              ].map(({ href, label }) => (
                 <Link key={href} href={href} style={{ color: '#6B6560', textDecoration: 'none', fontSize: '13px' }}>{label}</Link>
               ))}
             </div>
           </div>
+
+          {/* Partner */}
           <div>
-            <h3 style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '16px' }}>Juridiskt</h3>
+            <h4 style={{ color: '#C9A84C', fontSize: '11px', fontWeight: '700', letterSpacing: '2px', marginBottom: '16px', textTransform: 'uppercase' }}>
+              PARTNER
+            </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[['/villkor', 'Allmänna villkor'], ['/integritet', 'Integritetspolicy'], ['/villkor', 'Cookiepolicy']].map(([href, label]) => (
-                <Link key={href} href={href} style={{ color: '#6B6560', textDecoration: 'none', fontSize: '13px' }}>{label}</Link>
-              ))}
+              <Link href="/avtal" style={{ color: '#6B6560', textDecoration: 'none', fontSize: '13px' }}>Bli merchant</Link>
+              <Link href="/merchant" style={{ color: '#6B6560', textDecoration: 'none', fontSize: '13px' }}>Merchant dashboard</Link>
             </div>
           </div>
         </div>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <p style={{ color: '#4A4540', fontSize: '12px' }}>© 2026 Valör AB · Org.nr 559548-1556 · Alla rättigheter förbehållna.</p>
-          <p style={{ color: '#4A4540', fontSize: '12px' }}>Gjord med ❤️ i Sverige</p>
+
+        {/* Bottom bar */}
+        <div style={{
+          borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexWrap: 'wrap', gap: '12px',
+        }}>
+          <p style={{ color: '#3C3830', fontSize: '12px', margin: 0 }}>
+            2025 Valor AB. Org.nr 559548-1556. Alla rattigheter forbehallna.
+          </p>
+          <p style={{ color: '#3C3830', fontSize: '12px', margin: 0 }}>
+            Made with love in Stockholm
+          </p>
         </div>
       </div>
     </footer>
