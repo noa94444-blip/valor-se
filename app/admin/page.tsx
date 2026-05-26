@@ -1,155 +1,261 @@
-// @ts-nocheck
 import { createClient } from '@supabase/supabase-js'
+import Link from 'next/link'
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
-async function getStats() {
-  try {
-    const [ordersRes, dealsRes, revenueRes] = await Promise.all([
-      supabase.from('orders').select('id, status, amount, created_at', { count: 'exact' }),
-      supabase.from('deals').select('id, status', { count: 'exact' }),
-      supabase.from('orders').select('amount').eq('status', 'confirmed')
-    ])
+const VALOR_COMMISSION = 0.15
+const MERCHANT_SHARE = 0.85
 
-    const orders = ordersRes.data || []
-    const deals = dealsRes.data || []
-    const confirmedOrders = revenueRes.data || []
+async function getDashboardData() {
+    try {
+          const [ordersRes, dealsRes, payoutsRes] = await Promise.all([
+                  supabase.from('orders').select('*').order('created_at', { ascending: false }),
+                  supabase.from('deals').select('id, title, status, slug'),
+                  supabase.from('payouts').select('*').order('created_at', { ascending: false }).limit(10),
+                ])
 
-    const totalRevenue = confirmedOrders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0)
-    const pendingOrders = orders.filter(o => o.status === 'pending').length
-    const activeDeals = deals.filter(d => d.status === 'active').length
+      const orders = ordersRes.data || []
+            const deals = dealsRes.data || []
+                  const payouts = payoutsRes.data || []
 
-    const last7days = new Date()
-    last7days.setDate(last7days.getDate() - 7)
-    const recentOrders = orders.filter(o => new Date(o.created_at) > last7days).length
+                        const confirmedOrders = orders.filter(o => o.status === 'confirmed' || o.status === 'completed')
+          const pendingOrders = orders.filter(o => o.status === 'pending')
+          const activeDeals = deals.filter(d => d.status === 'active')
 
-    return {
-      totalOrders: ordersRes.count || orders.length,
-      totalRevenue,
-      pendingOrders,
-      activeDeals,
-      recentOrders,
-      latestOrders: orders.slice(0, 8)
+      const totalRevenue = confirmedOrders.reduce((s, o) => s + (parseFloat(o.amount) || 0), 0)
+          const valorEarnings = totalRevenue * VALOR_COMMISSION
+          const merchantPayouts = totalRevenue * MERCHANT_SHARE
+
+      const unpaidOrders = confirmedOrders.filter(o => !o.payout_id)
+          const unpaidAmount = unpaidOrders.reduce((s, o) => s + (parseFloat(o.amount) || 0), 0)
+          const unpaidMerchant = unpaidAmount * MERCHANT_SHARE
+
+      const last7 = new Date()
+          last7.setDate(last7.getDate() - 7)
+          const recentOrders = orders.filter(o => new Date(o.created_at) > last7).length
+
+      return {
+              orders,
+              deals,
+              payouts,
+              stats: {
+                        totalOrders: orders.length,
+                        confirmedOrders: confirmedOrders.length,
+                        pendingOrders: pendingOrders.length,
+                        activeDeals: activeDeals.length,
+                        recentOrders,
+                        totalRevenue,
+                        valorEarnings,
+                        merchantPayouts,
+                        unpaidMerchant,
+                        unpaidOrdersCount: unpaidOrders.length,
+              },
+      }
+    } catch {
+          return {
+                  orders: [], deals: [], payouts: [],
+                  stats: {
+                            totalOrders: 0, confirmedOrders: 0, pendingOrders: 0,
+                            activeDeals: 0, recentOrders: 0, totalRevenue: 0,
+                            valorEarnings: 0, merchantPayouts: 0, unpaidMerchant: 0, unpaidOrdersCount: 0,
+                  },
+          }
     }
-  } catch {
-    return { totalOrders: 0, totalRevenue: 0, pendingOrders: 0, activeDeals: 0, recentOrders: 0, latestOrders: [] }
-  }
+}
+
+function fmt(n: number) {
+    return n.toLocaleString('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 export default async function AdminPage() {
-  const stats = await getStats()
-
-  const statCards = [
-    { label: 'Totalt ordrar', value: stats.totalOrders, icon: '📦', color: '#4A6741' },
-    { label: 'Väntande ordrar', value: stats.pendingOrders, icon: '⏳', color: '#8B6914' },
-    { label: 'Aktiva deals', value: stats.activeDeals, icon: '🎁', color: '#2D5A8C' },
-    { label: 'Ordrar (7 dagar)', value: stats.recentOrders, icon: '📈', color: '#6B4A8C' },
-  ]
+    const { orders, payouts, stats } = await getDashboardData()
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F2ED', padding: '0' }}>
-      {/* Header */}
-      <div style={{ background: '#26231F', padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <a href="/" style={{ color: '#F5F2ED', fontWeight: '800', fontSize: '20px', textDecoration: 'none', letterSpacing: '-0.5px' }}>VALÖR</a>
-          <span style={{ color: '#8B6914', fontSize: '12px', background: '#8B691420', padding: '3px 10px', borderRadius: '20px', border: '1px solid #8B691440' }}>Admin</span>
-        </div>
-        <nav style={{ display: 'flex', gap: '24px' }}>
-          {[['Dashboard', '/admin'], ['Ordrar', '/admin/orders'], ['Deals', '/deals'], ['Hemsida', '/']].map(([label, href]) => (
-            <a key={href} href={href} style={{ color: '#F5F2ED', textDecoration: 'none', fontSize: '14px', opacity: 0.85 }}>{label}</a>
-          ))}
-        </nav>
-      </div>
-
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#26231F', marginBottom: '8px' }}>Dashboard</h1>
-        <p style={{ color: '#6B6560', marginBottom: '32px' }}>Översikt av Valörs verksamhet</p>
-
-        {/* Stat Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
-          {statCards.map(({ label, value, icon, color }) => (
-            <div key={label} style={{
-              background: '#FFFFFF', borderRadius: '12px', padding: '20px 24px',
-              border: '1px solid #E2DDD6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-            }}>
-              <div style={{ fontSize: '28px', marginBottom: '8px' }}>{icon}</div>
-              <div style={{ fontSize: '32px', fontWeight: '800', color: color, marginBottom: '4px' }}>{value}</div>
-              <div style={{ fontSize: '13px', color: '#6B6560' }}>{label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Revenue Card */}
-        <div style={{
-          background: '#26231F', borderRadius: '12px', padding: '24px 28px',
-          marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-        }}>
-          <div>
-            <div style={{ color: '#8B6914', fontSize: '12px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Intäkt (bekräftade)</div>
-            <div style={{ fontSize: '42px', fontWeight: '800', color: '#F5F2ED' }}>{stats.totalRevenue.toLocaleString('sv-SE')} kr</div>
-          </div>
-          <div style={{ fontSize: '64px' }}>💰</div>
-        </div>
-
-        {/* Recent Orders */}
-        <div style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2DDD6', overflow: 'hidden' }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DDD6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#26231F' }}>Senaste ordrar</h2>
-            <a href="/admin/orders" style={{ fontSize: '13px', color: '#4A6741', textDecoration: 'none', fontWeight: '600' }}>Visa alla →</a>
-          </div>
-          {stats.latestOrders.length === 0 ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#6B6560' }}>Inga ordrar ännu</div>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#F5F2ED' }}>
-                  {['Order ID', 'Status', 'Belopp', 'Datum'].map(h => (
-                    <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '12px', color: '#6B6560', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {stats.latestOrders.map((order, i) => (
-                  <tr key={order.id} style={{ borderTop: i > 0 ? '1px solid #F0EDE8' : 'none' }}>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', fontFamily: 'monospace', color: '#26231F' }}>{(order.id || '').substring(0, 8).toUpperCase()}</td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{
-                        fontSize: '12px', padding: '3px 10px', borderRadius: '20px', fontWeight: '600',
-                        background: order.status === 'confirmed' ? '#D4EDDA' : order.status === 'cancelled' ? '#F8D7DA' : '#FFF3CD',
-                        color: order.status === 'confirmed' ? '#155724' : order.status === 'cancelled' ? '#721C24' : '#856404'
-                      }}>{order.status || 'pending'}</span>
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', color: '#26231F', fontWeight: '600' }}>{order.amount ? parseFloat(order.amount).toLocaleString('sv-SE') + ' kr' : '–'}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '12px', color: '#6B6560' }}>{order.created_at ? new Date(order.created_at).toLocaleDateString('sv-SE') : '–'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* Quick Links */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '24px' }}>
-          {[
-            { title: 'Hantera ordrar', desc: 'Se alla ordrar, filtrera och exportera', href: '/admin/orders', icon: '📋' },
-            { title: 'Utforska deals', desc: 'Se alla aktiva deals på sajten', href: '/deals', icon: '🎯' },
-            { title: 'Bli partner', desc: 'Läs om handlaravtal och provisions', href: '/avtal', icon: '🤝' },
-          ].map(({ title, desc, href, icon }) => (
-            <a key={href} href={href} style={{
-              background: '#FFFFFF', borderRadius: '12px', padding: '20px',
-              border: '1px solid #E2DDD6', textDecoration: 'none', display: 'block',
-              transition: 'border-color 0.2s'
-            }}>
-              <div style={{ fontSize: '24px', marginBottom: '8px' }}>{icon}</div>
-              <div style={{ fontSize: '15px', fontWeight: '700', color: '#26231F', marginBottom: '4px' }}>{title}</div>
-              <div style={{ fontSize: '13px', color: '#6B6560' }}>{desc}</div>
-            </a>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
+        <div className="min-h-screen bg-[#F5F2ED]">
+          {/* Top nav */}
+              <header style={{ background: '#1C1A17', borderBottom: '1px solid #2a2825', padding: '0 32px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <span style={{ color: '#C9A84C', fontWeight: 900, fontSize: 18, letterSpacing: 2 }}>VALOR</span>span>
+                                <span style={{ background: '#C9A84C22', color: '#C9A84C', fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, border: '1px solid #C9A84C40', letterSpacing: 1 }}>ADMIN</span>span>
+                      </div>div>
+                      <nav style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+                                <Link href="/admin" style={{ color: '#C9A84C', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Dashboard</Link>Link>
+                                <Link href="/admin/orders" style={{ color: '#999', fontSize: 13, textDecoration: 'none' }}>Ordrar</Link>Link>
+                                <Link href="/admin/payouts" style={{ color: '#999', fontSize: 13, textDecoration: 'none' }}>Utbetalningar</Link>Link>
+                                <Link href="/admin/deals" style={{ color: '#999', fontSize: 13, textDecoration: 'none' }}>Deals</Link>Link>
+                                <Link href="/" style={{ color: '#555', fontSize: 12, textDecoration: 'none' }}>Hemsida</Link>Link>
+                      </nav>nav>
+              </header>header>
+        
+              <main className="max-w-7xl mx-auto px-6 py-10">
+                      <div className="mb-8">
+                                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>h1>
+                                <p className="text-gray-500 text-sm mt-1">Oversikt over Valors verksamhet och utbetalningar</p>p>
+                      </div>div>
+              
+                {/* === FINANSIELL OVERSIKT === */}
+                      <div className="mb-8">
+                                <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Finansiell oversikt</h2>h2>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                  {/* Total inkasserat */}
+                                            <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+                                                          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Totalt inkasserat</p>p>
+                                                          <p className="text-2xl font-bold text-gray-900">{fmt(stats.totalRevenue)} kr</p>p>
+                                                          <p className="text-xs text-gray-400 mt-1">{stats.confirmedOrders} bekraftade kop</p>p>
+                                            </div>div>
+                                  {/* Valors intjaning */}
+                                            <div className="bg-[#1C1A17] rounded-2xl p-5 border border-[#2a2825] shadow-sm">
+                                                          <p className="text-xs text-[#C9A84C] uppercase tracking-wider mb-1">Valors intjaning (15%)</p>p>
+                                                          <p className="text-2xl font-bold text-[#C9A84C]">{fmt(stats.valorEarnings)} kr</p>p>
+                                                          <p className="text-xs text-gray-500 mt-1">Av totalt inkasserat</p>p>
+                                            </div>div>
+                                  {/* Ska betalas ut */}
+                                            <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+                                                          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Utbetalt till foretag (85%)</p>p>
+                                                          <p className="text-2xl font-bold text-gray-900">{fmt(stats.merchantPayouts)} kr</p>p>
+                                                          <p className="text-xs text-gray-400 mt-1">Totalt sedan start</p>p>
+                                            </div>div>
+                                  {/* Vantar utbetalning */}
+                                            <div className={`rounded-2xl p-5 border shadow-sm ${stats.unpaidOrdersCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'}`}>
+                                                          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Vantande utbetalning</p>p>
+                                                          <p className={`text-2xl font-bold ${stats.unpaidOrdersCount > 0 ? 'text-amber-700' : 'text-gray-900'}`}>
+                                                            {fmt(stats.unpaidMerchant)} kr
+                                                          </p>p>
+                                                          <p className="text-xs text-gray-500 mt-1">{stats.unpaidOrdersCount} ordrar ej utbetalda</p>p>
+                                            </div>div>
+                                </div>div>
+                      </div>div>
+              
+                {/* === SNABBSTATISTIK === */}
+                      <div className="mb-8">
+                                <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Aktivitet</h2>h2>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                            <div className="bg-white rounded-2xl p-5 border border-gray-200">
+                                                          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Totalt ordrar</p>p>
+                                                          <p className="text-3xl font-bold text-gray-900">{stats.totalOrders}</p>p>
+                                            </div>div>
+                                            <div className="bg-white rounded-2xl p-5 border border-gray-200">
+                                                          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Vantande</p>p>
+                                                          <p className={`text-3xl font-bold ${stats.pendingOrders > 0 ? 'text-amber-600' : 'text-gray-900'}`}>{stats.pendingOrders}</p>p>
+                                            </div>div>
+                                            <div className="bg-white rounded-2xl p-5 border border-gray-200">
+                                                          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Aktiva deals</p>p>
+                                                          <p className="text-3xl font-bold text-gray-900">{stats.activeDeals}</p>p>
+                                            </div>div>
+                                            <div className="bg-white rounded-2xl p-5 border border-gray-200">
+                                                          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Ordrar (7 dagar)</p>p>
+                                                          <p className="text-3xl font-bold text-gray-900">{stats.recentOrders}</p>p>
+                                            </div>div>
+                                </div>div>
+                      </div>div>
+              
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* === SENASTE ORDRAR === */}
+                                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                                            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                                                          <h2 className="font-bold text-gray-900">Senaste ordrar</h2>h2>
+                                                          <Link href="/admin/orders" className="text-sm text-[#8B6914] hover:underline font-medium">Visa alla</Link>Link>
+                                            </div>div>
+                                            <div className="divide-y divide-gray-50">
+                                              {orders.slice(0, 8).map((order: any) => {
+                          const amount = parseFloat(order.amount) || 0
+                                            const merchantAmt = amount * MERCHANT_SHARE
+                                                              const valorAmt = amount * VALOR_COMMISSION
+                                                                                return (
+                                                                                                    <div key={order.id} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                                                                                                        <div className="flex-1 min-w-0">
+                                                                                                                                              <p className="text-sm font-mono text-gray-600 truncate">{order.id?.toString().substring(0, 8).toUpperCase()}</p>p>
+                                                                                                                                              <p className="text-xs text-gray-400">{order.customer_name || order.customer_email || 'Okand'}</p>p>
+                                                                                                                          </div>div>
+                                                                                                                        <div className="text-right ml-4">
+                                                                                                                                              <p className="text-sm font-bold text-gray-900">{fmt(amount)} kr</p>p>
+                                                                                                                                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                                                                                              order.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                                                                                                              order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                                                                                                              'bg-gray-100 text-gray-500'
+                                                                                                      }`}>{order.status}</span>span>
+                                                                                                                          </div>div>
+                                                                                                      </div>div>
+                                                                                                  )
+                                              })}
+                                              {orders.length === 0 && (
+                          <div className="px-6 py-8 text-center text-gray-400 text-sm">Inga ordrar an</div>div>
+                                                          )}
+                                            </div>div>
+                                </div>div>
+                      
+                        {/* === UTBETALNINGSSEKTION === */}
+                                <div className="space-y-4">
+                                  {/* Utbetalningsstatus */}
+                                            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                                                          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                                                                          <h2 className="font-bold text-gray-900">Utbetalningshantering</h2>h2>
+                                                                          <Link href="/admin/payouts" className="text-sm text-[#8B6914] hover:underline font-medium">Hantera</Link>Link>
+                                                          </div>div>
+                                                          <div className="p-6">
+                                                                          <div className="space-y-3 mb-5">
+                                                                                            <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                                                                                                                <span className="text-sm text-gray-500">Provision Valor tar</span>span>
+                                                                                                                <span className="text-sm font-bold text-[#1C1A17]">15%</span>span>
+                                                                                              </div>div>
+                                                                                            <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                                                                                                                <span className="text-sm text-gray-500">Foretaget far</span>span>
+                                                                                                                <span className="text-sm font-bold text-[#2D5A3A]">85%</span>span>
+                                                                                              </div>div>
+                                                                                            <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                                                                                                                <span className="text-sm text-gray-500">Utbetalningsfrekvens</span>span>
+                                                                                                                <span className="text-sm font-bold text-gray-700">Manadsvis</span>span>
+                                                                                              </div>div>
+                                                                                            <div className="flex justify-between items-center py-2">
+                                                                                                                <span className="text-sm text-gray-500">Nastakommande utbetalning</span>span>
+                                                                                                                <span className="text-sm font-bold text-gray-700">
+                                                                                                                  {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('sv-SE')}
+                                                                                                                  </span>span>
+                                                                                              </div>div>
+                                                                          </div>div>
+                                                          
+                                                            {stats.unpaidOrdersCount > 0 ? (
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                                <p className="text-sm font-bold text-amber-800 mb-1">
+                                                  {stats.unpaidOrdersCount} ordrar vantar utbetalning
+                                                </p>p>
+                                                <p className="text-xl font-bold text-amber-700 mb-3">{fmt(stats.unpaidMerchant)} kr att betala ut</p>p>
+                                                <Link
+                                                                        href="/admin/payouts"
+                                                                        className="block w-full text-center py-2.5 bg-[#1C1A17] text-[#C9A84C] font-bold rounded-xl text-sm hover:bg-[#2a2825] transition-colors"
+                                                                      >
+                                                                      Hantera utbetalningar
+                                                </Link>Link>
+                            </div>div>
+                          ) : (
+                            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                                                <p className="text-sm font-bold text-green-700">Alla utbetalningar a jour</p>p>
+                            </div>div>
+                                                                          )}
+                                                          </div>div>
+                                            </div>div>
+                                
+                                  {/* Snabblank */}
+                                            <div className="grid grid-cols-3 gap-3">
+                                                          <Link href="/admin/orders" className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:border-[#C9A84C] transition-colors">
+                                                                          <span className="text-2xl block mb-1">📦</span>span>
+                                                                          <span className="text-xs font-semibold text-gray-600">Ordrar</span>span>
+                                                          </Link>Link>
+                                                          <Link href="/admin/payouts" className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:border-[#C9A84C] transition-colors">
+                                                                          <span className="text-2xl block mb-1">💳</span>span>
+                                                                          <span className="text-xs font-semibold text-gray-600">Utbetala</span>span>
+                                                          </Link>Link>
+                                                          <Link href="/deals" className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:border-[#C9A84C] transition-colors">
+                                                                          <span className="text-2xl block mb-1">🎯</span>span>
+                                                                          <span className="text-xs font-semibold text-gray-600">Deals</span>span>
+                                                          </Link>Link>
+                                            </div>div>
+                                </div>div>
+                      </div>div>
+              </main>main>
+        </div>div>
+      )
+}</div>
