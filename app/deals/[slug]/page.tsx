@@ -180,7 +180,6 @@ export default async function DealPage({ params }: Props) {
                                             <p className="text-gray-900 font-medium">🔥 {deal.sold_count} köp</p>
                           </div>
                                                           )}
-                                            </div>
                                 </div>
                       
                         {/* Right: Purchase card – sticky on desktop */}
@@ -272,4 +271,4 @@ export default async function DealPage({ params }: Props) {
                       />
         </div>
       )
-}</div>
+}
