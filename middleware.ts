@@ -1,76 +1,109 @@
-—import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-// Protected routes that require authentication
+// Protected routes
 const ADMIN_ROUTES = ['/admin']
 const MERCHANT_ROUTES = ['/merchant']
 const AUTH_ROUTES = ['/konto']
 
-export async function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl
+// In-memory rate limiter for scan-voucher (resets on cold start)
+const scanRateMap = new Map<string, { count: number; resetAt: number }>()
+const SCAN_LIMIT = 10
+const SCAN_WINDOW_MS = 60 * 1000
 
-  // Create a response to modify
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const record = scanRateMap.get(ip)
+  if (!record || now > record.resetAt) {
+    scanRateMap.set(ip, { count: 1, resetAt: now + SCAN_WINDOW_MS })
+    return false
+  }
+  if (record.count >= SCAN_LIMIT) return true
+  record.count++
+  return false
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Rate limit /api/scan-voucher - max 10 scans/min per IP
+  if (pathname === '/api/scan-voucher') {
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      'unknown'
+    if (isRateLimited(ip)) {
+      return NextResponse.json(
+        { error: 'For manga forsok. Vantar 1 minut och forsok igen.' },
+        { status: 429 }
+      )
+    }
+  }
+
   let response = NextResponse.next({
-        request: {
-                headers: request.headers,
-        },
+    request: { headers: request.headers },
   })
 
-  // Create Supabase server client
   const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-            cookies: {
-                      getAll() {
-                                  return request.cookies.getAll()
-                      },
-                      setAll(cookiesToSet) {
-                                  cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-                                  response = NextResponse.next({ request })
-                                  cookiesToSet.forEach(({ name, value, options }) =>
-                                                response.cookies.set(name, value, options)
-                                                                 )
-                      },
-            },
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
     }
-      )
+  )
 
-  // Get current user session
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect /admin - must be logged in (add role check when roles are implemented)
+  // Protect /admin - requires login AND admin role
   if (ADMIN_ROUTES.some(route => pathname.startsWith(route))) {
-        if (!user) {
-                const loginUrl = new URL('/logga-in', request.url)
-                loginUrl.searchParams.set('redirect', pathname)
-                return NextResponse.redirect(loginUrl)
-        }
+    if (!user) {
+      const loginUrl = new URL('/logga-in', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+    // Check role in app_metadata (server-side) or user_metadata
+    const role =
+      (user.app_metadata?.role as string | undefined) ||
+      (user.user_metadata?.role as string | undefined)
+    if (role !== 'admin') {
+      return NextResponse.redirect(new URL('/?error=unauthorized', request.url))
+    }
   }
 
-  // Protect /merchant - must be logged in
+  // Protect /merchant - requires login
   if (MERCHANT_ROUTES.some(route => pathname.startsWith(route))) {
-        if (!user) {
-                const loginUrl = new URL('/logga-in', request.url)
-                loginUrl.searchParams.set('redirect', pathname)
-                return NextResponse.redirect(loginUrl)
-        }
+    if (!user) {
+      const loginUrl = new URL('/logga-in', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
   }
 
-  // Protect /konto - must be logged in
+  // Protect /konto - requires login
   if (AUTH_ROUTES.some(route => pathname.startsWith(route))) {
-        if (!user) {
-                const loginUrl = new URL('/logga-in', request.url)
-                loginUrl.searchParams.set('redirect', pathname)
-                return NextResponse.redirect(loginUrl)
-        }
+    if (!user) {
+      const loginUrl = new URL('/logga-in', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
   }
 
   return response
 }
 
 export const config = {
-    matcher: [
-          '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-        ],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
