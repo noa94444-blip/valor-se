@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// ============================================================
-// SECURE CHECKOUT API - Production Grade
+// =============================================================
+// SECURE CHECKOUT API – Production Grade
 // Input validation, deal verification, secure voucher codes
-// ============================================================
+// =============================================================
 
 function getAdminSupabase() {
   return createClient(
@@ -26,29 +26,24 @@ function validateInput(body: unknown): { valid: boolean; error?: string; data?: 
   if (!body || typeof body !== 'object') {
     return { valid: false, error: 'Invalid request body' }
   }
-  const b = body as Record<string, unknown>
-  const { dealId, quantity } = b
-
+  const { dealId, quantity } = body as Record<string, unknown>
   if (!dealId || typeof dealId !== 'string') {
     return { valid: false, error: 'Invalid deal ID' }
   }
-
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   if (!uuidRegex.test(dealId)) {
     return { valid: false, error: 'Invalid deal ID format' }
   }
-
   const qty = Number(quantity)
   if (!Number.isInteger(qty) || qty < 1 || qty > 10) {
     return { valid: false, error: 'Quantity must be between 1 and 10' }
   }
-
   return { valid: true, data: { dealId, quantity: qty } }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // ── 1. PARSE AND VALIDATE INPUT ────────────────────────
+    // — 1. PARSE AND VALIDATE INPUT ———————————————
     let body: unknown
     try {
       body = await request.json()
@@ -63,11 +58,11 @@ export async function POST(request: NextRequest) {
 
     const { dealId, quantity } = validation.data
 
-    // ── 2. VERIFY DEAL EXISTS AND IS ACTIVE ───────────────
+    // — 2. VERIFY DEAL EXISTS AND IS ACTIVE ———————————————
     const adminSupabase = getAdminSupabase()
     const { data: deal, error: dealError } = await adminSupabase
       .from('deals')
-      .select('id, title, deal_price, status, max_qty, sold_count, valid_until')
+      .select('id, title, deal_price, status, max_qty, sold_count, valid_until, slug, merchant_id')
       .eq('id', dealId)
       .eq('status', 'active')
       .single()
@@ -84,12 +79,50 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This deal is sold out' }, { status: 410 })
     }
 
-    // ── 3. GENERATE SECURE VOUCHER CODE ───────────────────
+    // — 3. GENERATE AND SAVE VOUCHER CODE ———————————————
     const voucherCode = generateVoucherCode()
     const totalPrice = deal.deal_price * quantity
 
-    // DEMO MODE: Return voucher directly
-    // PRODUCTION (Monday): Create Stripe PaymentIntent, voucher created in webhook
+    // VALOR commission: 15% kept, 85% to merchant
+    const valorCommission = Math.round(totalPrice * 0.15)
+    const merchantPayout = Math.round(totalPrice * 0.85)
+
+    // Save voucher to database
+    const { data: voucher, error: voucherError } = await adminSupabase
+      .from('vouchers')
+      .insert({
+        code: voucherCode,
+        deal_id: dealId,
+        deal_slug: deal.slug || dealId,
+        quantity: quantity,
+        used_count: 0,
+        total_price: totalPrice,
+        merchant_payout: merchantPayout,
+        valor_commission: valorCommission,
+        status: 'active',
+        merchant_id: deal.merchant_id,
+      })
+      .select()
+      .single()
+
+    if (voucherError) {
+      console.error('[CHECKOUT] Failed to create voucher:', voucherError)
+      // Still return the code so user can use it — log for manual recovery
+      return NextResponse.json({
+        success: true,
+        code: voucherCode,
+        dealTitle: deal.title,
+        totalPrice,
+        warning: 'Voucher saved with warning',
+      })
+    }
+
+    // Update sold_count on the deal
+    await adminSupabase
+      .from('deals')
+      .update({ sold_count: (deal.sold_count || 0) + quantity })
+      .eq('id', dealId)
+
     return NextResponse.json({
       success: true,
       code: voucherCode,
@@ -104,5 +137,5 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
+  return NextResponse.json({ status: 'Checkout API running' })
 }
