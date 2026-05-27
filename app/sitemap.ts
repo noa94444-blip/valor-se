@@ -7,7 +7,7 @@ const supabase = createClient(
 )
 
 export default async function sitemap() {
-  const baseUrl = 'https://valor-se.vercel.app'
+  const baseUrl = 'https://xn--valr-ppa.se'
 
   // Static pages
   const staticPages = [
