@@ -76,99 +76,94 @@ export default async function DealPage({ params }: Props) {
   const displayCategory = CATEGORY_LABEL[deal.category?.toLowerCase()] || deal.category || 'Erbjudande'
 
   return (
-    <div className="min-h-screen bg-[#F5F2ED]">
+    <div style={{ minHeight: '100vh', background: '#1C1A17', color: '#F5F2ED' }}>
       {/* Breadcrumbs */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-        <nav className="flex items-center gap-2 text-sm text-[#8C7B5E]">
-          <Link href="/" className="hover:text-[#1C1A17] transition-colors">Hem</Link>
+      <div style={{ maxWidth: '1152px', margin: '0 auto', padding: '16px 24px' }}>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#8C7B5E' }}>
+          <Link href="/" style={{ color: '#8C7B5E', textDecoration: 'none' }}>Hem</Link>
           <span>/</span>
-          <Link href="/deals" className="hover:text-[#1C1A17] transition-colors">Erbjudanden</Link>
+          <Link href="/deals" style={{ color: '#8C7B5E', textDecoration: 'none' }}>Erbjudanden</Link>
           <span>/</span>
-          <span className="text-[#1C1A17] font-medium truncate max-w-[200px]">{deal.title}</span>
+          <span style={{ color: '#F5F2ED', fontWeight: '500' }}>{deal.title}</span>
         </nav>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+      <div style={{ maxWidth: '1152px', margin: '0 auto', padding: '0 24px 64px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '64px', alignItems: 'start' }}>
+          
           {/* Left: Image */}
-          <div className="relative">
-            <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#E8E2D9] shadow-lg">
+          <div style={{ position: 'relative' }}>
+            <div style={{ aspectRatio: '4/3', borderRadius: '16px', overflow: 'hidden', background: '#2A2720', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
               {deal.image_url ? (
                 <img
                   src={deal.image_url}
                   alt={deal.title}
-                  className="w-full h-full object-cover"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-6xl opacity-30">🎁</span>
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '80px', opacity: 0.3 }}>
+                  🎁
                 </div>
               )}
             </div>
             {savings > 0 && (
-              <div className="absolute top-4 left-4 bg-[#2D5A3A] text-white text-sm font-bold px-3 py-1.5 rounded-full shadow">
+              <div style={{ position: 'absolute', top: '16px', left: '16px', background: '#2D5A3A', color: 'white', fontSize: '13px', fontWeight: 'bold', padding: '6px 12px', borderRadius: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
                 -{savings}% RABATT
               </div>
             )}
           </div>
 
           {/* Right: Details */}
-          <div className="flex flex-col gap-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
             {/* Category */}
             <div>
-              <span className="inline-block bg-[#C9A84C]/10 text-[#C9A84C] text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full border border-[#C9A84C]/20">
+              <span style={{ display: 'inline-block', background: 'rgba(201,168,76,0.1)', color: '#C9A84C', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '3px', padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(201,168,76,0.2)' }}>
                 {displayCategory}
               </span>
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl sm:text-4xl font-bold text-[#1C1A17] leading-tight">
+            <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#F5F2ED', lineHeight: 1.2, margin: 0 }}>
               {deal.title}
             </h1>
 
             {/* Description */}
             {deal.description && (
-              <p className="text-[#5C4E38] text-base leading-relaxed">
+              <p style={{ color: '#A89880', fontSize: '16px', lineHeight: 1.7, margin: 0 }}>
                 {deal.description}
               </p>
             )}
 
             {/* Merchant */}
             {deal.merchant_name && (
-              <div className="flex items-center gap-2 text-sm text-[#8C7B5E]">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <span>Av <strong className="text-[#1C1A17]">{deal.merchant_name}</strong></span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#8C7B5E' }}>
+                <span>Av <strong style={{ color: '#C9A84C' }}>{deal.merchant_name}</strong></span>
               </div>
             )}
 
             {/* Location */}
             {deal.location && (
-              <div className="flex items-center gap-2 text-sm text-[#8C7B5E]">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span>{deal.location}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#8C7B5E' }}>
+                <span>📍 {deal.location}</span>
               </div>
             )}
 
             {/* Price Block */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E8E2D9]">
-              <div className="flex items-end gap-4 mb-4">
+            <div style={{ background: '#2A2720', borderRadius: '16px', padding: '24px', border: '1px solid #3A3530' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <div className="text-4xl font-bold text-[#2D5A3A]">
+                  <div style={{ fontSize: '42px', fontWeight: 'bold', color: '#C9A84C' }}>
                     {deal.deal_price?.toLocaleString('sv-SE')} kr
                   </div>
                   {deal.original_price && deal.original_price > deal.deal_price && (
-                    <div className="text-sm text-[#8C7B5E] line-through mt-1">
+                    <div style={{ fontSize: '14px', color: '#8C7B5E', textDecoration: 'line-through', marginTop: '4px' }}>
                       Ord. {deal.original_price?.toLocaleString('sv-SE')} kr
                     </div>
                   )}
                 </div>
                 {savings > 0 && (
-                  <div className="text-sm font-semibold text-[#2D5A3A] bg-[#2D5A3A]/10 px-2 py-1 rounded-lg">
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#2D5A3A', background: 'rgba(45,90,58,0.15)', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(45,90,58,0.3)' }}>
                     Du sparar {(deal.original_price - deal.deal_price).toLocaleString('sv-SE')} kr
                   </div>
                 )}
@@ -176,11 +171,8 @@ export default async function DealPage({ params }: Props) {
 
               {/* Validity */}
               {deal.valid_until && (
-                <div className="text-xs text-[#8C7B5E] mb-4 flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Giltigt till {new Date(deal.valid_until).toLocaleDateString('sv-SE')}
+                <div style={{ fontSize: '12px', color: '#8C7B5E', marginBottom: '16px' }}>
+                  ⏱ Giltigt till {new Date(deal.valid_until).toLocaleDateString('sv-SE')}
                 </div>
               )}
 
@@ -191,35 +183,35 @@ export default async function DealPage({ params }: Props) {
                 merchantId={deal.merchant_id}
               />
 
-              <p className="text-xs text-[#8C7B5E] text-center mt-3">
+              <p style={{ fontSize: '12px', color: '#8C7B5E', textAlign: 'center', marginTop: '12px', marginBottom: 0 }}>
                 Säker betalning · Omedelbar leverans · 14 dagars öppet köp
               </p>
             </div>
 
             {/* Terms */}
             {deal.terms && (
-              <div className="bg-[#1C1A17]/5 rounded-xl p-4">
-                <h3 className="text-sm font-semibold text-[#1C1A17] mb-2">Villkor</h3>
-                <p className="text-xs text-[#5C4E38] leading-relaxed">{deal.terms}</p>
+              <div style={{ background: 'rgba(201,168,76,0.05)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(201,168,76,0.1)' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#C9A84C', marginBottom: '8px', marginTop: 0 }}>Villkor</h3>
+                <p style={{ fontSize: '13px', color: '#8C7B5E', lineHeight: 1.6, margin: 0 }}>{deal.terms}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Trust Badges */}
-        <div className="mt-12 pt-8 border-t border-[#E8E2D9]">
-          <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
-            <div className="text-center">
-              <div className="text-2xl mb-1">🔒</div>
-              <div className="text-xs text-[#5C4E38] font-medium">Säker betalning</div>
+        <div style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid #2A2720' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '48px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '28px', marginBottom: '4px' }}>🔒</div>
+              <div style={{ fontSize: '12px', color: '#8C7B5E', fontWeight: '500' }}>Säker betalning</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl mb-1">⚡</div>
-              <div className="text-xs text-[#5C4E38] font-medium">Direkt leverans</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '28px', marginBottom: '4px' }}>⚡</div>
+              <div style={{ fontSize: '12px', color: '#8C7B5E', fontWeight: '500' }}>Direkt leverans</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl mb-1">💬</div>
-              <div className="text-xs text-[#5C4E38] font-medium">Support dygnet runt</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '28px', marginBottom: '4px' }}>💬</div>
+              <div style={{ fontSize: '12px', color: '#8C7B5E', fontWeight: '500' }}>Support dygnet runt</div>
             </div>
           </div>
         </div>
