@@ -109,7 +109,7 @@ export default async function HomePage() {
         backgroundColor: 'rgba(139,105,20,0.05)', padding: '32px 24px',
       }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', textAlign: 'center' }}>
-          {[{ num: '9+', label: 'Aktiva deals' }, { num: '85%', label: 'Till partnern' }, { num: '100%', label: 'Kurerade' }].map((s) => (
+          {[{ num: '9+', label: 'Aktiva deals' }, { num: '98%', label: 'NÖJDA KUNDER' }, { num: '100%', label: 'Kurerade' }].map((s) => (
             <div key={s.label}>
               <p style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: '900', color: '#C9A84C', fontFamily: 'Georgia, serif' }}>{s.num}</p>
               <p style={{ color: '#6B6560', fontSize: '13px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', marginTop: '4px' }}>{s.label}</p>
@@ -239,7 +239,7 @@ export default async function HomePage() {
         }}>
           <p style={{ color: '#C9A84C', fontSize: '12px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '16px' }}>✦ För företag</p>
           <h2 style={{ fontSize: 'clamp(24px, 3vw, 36px)', fontWeight: '800', color: '#F5F2ED', fontFamily: 'Georgia, serif', marginBottom: '16px' }}>Nå tusentals kunder</h2>
-          <p style={{ color: '#9B9589', fontSize: '16px', marginBottom: '32px', lineHeight: '1.6' }}>Bli partner på Valör — du behåller 85% av varje försäljning</p>
+          <p style={{ color: '#9B9589', fontSize: '16px', marginBottom: '32px', lineHeight: '1.6' }}>Bli partner på Valör — du behåller 98% av varje försäljning</p>
           <Link href="/merchant" style={{
             display: 'inline-block',
             background: 'linear-gradient(135deg, #C9A84C 0%, #8B6914 100%)',
