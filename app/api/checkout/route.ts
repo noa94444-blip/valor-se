@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     const adminSupabase = getAdminSupabase()
     const { data: deal, error: dealError } = await adminSupabase
       .from('deals')
-      .select('id, title, deal_price, status, max_qty, sold_count, valid_until, slug, merchant_id')
+      .select('id, title, deal_price, status, max_qty, sold_count, valid_until, slug')
       .eq('id', dealId)
       .eq('status', 'active')
       .single()
@@ -83,37 +83,29 @@ export async function POST(request: NextRequest) {
     const voucherCode = generateVoucherCode()
     const totalPrice = deal.deal_price * quantity
 
-    // VALOR commission: 15% kept, 85% to merchant
-    const valorCommission = Math.round(totalPrice * 0.15)
-    const merchantPayout = Math.round(totalPrice * 0.85)
-
-    // Save voucher to database
+    // Save voucher to database (only using confirmed columns)
     const { data: voucher, error: voucherError } = await adminSupabase
       .from('vouchers')
       .insert({
         code: voucherCode,
-        deal_id: dealId,
         deal_slug: deal.slug || dealId,
         quantity: quantity,
         used_count: 0,
         total_price: totalPrice,
-        merchant_payout: merchantPayout,
-        valor_commission: valorCommission,
         status: 'active',
-        merchant_id: deal.merchant_id,
       })
       .select()
       .single()
 
     if (voucherError) {
       console.error('[CHECKOUT] Failed to create voucher:', voucherError)
-      // Still return the code so user can use it — log for manual recovery
+      // Return the code even if save failed - log for manual recovery
       return NextResponse.json({
         success: true,
         code: voucherCode,
         dealTitle: deal.title,
         totalPrice,
-        warning: 'Voucher saved with warning',
+        warning: 'Voucher save error',
       })
     }
 
