@@ -25,26 +25,39 @@ export default function BuyButton({ dealId, dealTitle, dealPrice, merchantId }: 
         body: JSON.stringify({ dealId, quantity: 1 }),
       })
       const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Något gick fel. Försök igen.')
+        setLoading(false)
+        return
+      }
+
+      // Stripe redirect (production mode)
       if (data.url) {
         window.location.href = data.url
-      } else if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl
-      } else if (data.voucherCode || data.voucher_code) {
-        // Non-Stripe flow: redirect to voucher page
-        const code = data.voucherCode || data.voucher_code
-        router.push('/voucher/' + code)
-      } else if (data.error) {
-        setError(data.error)
-      } else {
-        // Fallback: go to kassa
-        router.push('/kassa?dealId=' + dealId)
+        return
       }
-    } catch {
-      setError('Något gick fel. Försök igen.')
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl
+        return
+      }
+
+      // Demo/direct voucher mode — API returns { code, success, dealTitle, totalPrice }
+      const voucherCode = data.code || data.voucherCode || data.voucher_code
+      if (voucherCode) {
+        router.push('/voucher/' + voucherCode)
+        return
+      }
+
+      setError(data.error || 'Okänt fel. Försök igen.')
+    } catch (err) {
+      setError('Nätverksfel. Kontrollera din anslutning.')
     } finally {
       setLoading(false)
     }
   }
+
+  const priceFormatted = dealPrice.toLocaleString('sv-SE')
 
   return (
     <div>
@@ -53,71 +66,43 @@ export default function BuyButton({ dealId, dealTitle, dealPrice, merchantId }: 
         disabled={loading}
         style={{
           width: '100%',
-          padding: '16px 24px',
-          background: loading
-            ? '#1A3325'
-            : 'linear-gradient(135deg, #2D5A3A 0%, #1e4028 100%)',
-          color: loading ? '#4ade80' : '#fff',
+          padding: '18px 32px',
+          background: loading ? '#1e3d2a' : '#2D5A3A',
+          color: '#F5F2ED',
           border: 'none',
-          borderRadius: '12px',
-          fontSize: '17px',
-          fontWeight: '700',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          letterSpacing: '0.3px',
-          transition: 'all 0.2s ease',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '10px',
-          boxShadow: loading ? 'none' : '0 4px 20px rgba(45,90,58,0.4)',
-          minHeight: '56px',
-          WebkitTapHighlightColor: 'transparent',
-        }}
-      >
-        {loading ? (
-          <>
-            <span style={{
-              width: '18px', height: '18px',
-              border: '2px solid #4ade80',
-              borderTopColor: 'transparent',
-              borderRadius: '50%',
-              display: 'inline-block',
-              animation: 'spin 0.8s linear infinite',
-              flexShrink: 0
-            }} />
-            Behandlar...
-          </>
-        ) : (
-          <>
-            <span style={{ fontSize: '20px' }}>🛒</span>
-            Köp nu — {dealPrice?.toLocaleString('sv-SE')} kr
-          </>
-        )}
-      </button>
-
-      {error && (
-        <div style={{
-          marginTop: '12px',
-          padding: '12px 16px',
-          background: 'rgba(200,50,50,0.1)',
-          border: '1px solid rgba(200,50,50,0.3)',
           borderRadius: '8px',
-          color: '#f87171',
+          fontSize: '18px',
+          fontWeight: '600',
+          fontFamily: 'Inter, sans-serif',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          letterSpacing: '0.02em',
+          transition: 'background 0.2s ease',
+        }}
+        onMouseEnter={e => { if (!loading) (e.target as HTMLButtonElement).style.background = '#1e3d2a' }}
+        onMouseLeave={e => { if (!loading) (e.target as HTMLButtonElement).style.background = '#2D5A3A' }}
+      >
+        {loading ? '⏳ Behandlar...' : `🛒 Köp nu — ${priceFormatted} kr`}
+      </button>
+      {error && (
+        <p style={{
+          color: '#e74c3c',
+          marginTop: '12px',
           fontSize: '14px',
-          textAlign: 'center'
+          textAlign: 'center',
+          fontFamily: 'Inter, sans-serif',
         }}>
-          ⚠️ {error}
-        </div>
+          {error}
+        </p>
       )}
-
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        button:active {
-          transform: scale(0.98);
-        }
-      `}</style>
+      <p style={{
+        textAlign: 'center',
+        fontSize: '12px',
+        color: '#8a8a7a',
+        marginTop: '12px',
+        fontFamily: 'Inter, sans-serif',
+      }}>
+        🔒 Säker betalning · ⚡ Omedelbar leverans · 14 dagars öppet köp
+      </p>
     </div>
   )
 }
