@@ -19,16 +19,20 @@ export default function BuyButton({ dealId, dealTitle, dealPrice, merchantId }: 
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/create-checkout', {
+      const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dealId, dealTitle, dealPrice, merchantId }),
+        body: JSON.stringify({ dealId, quantity: 1 }),
       })
       const data = await res.json()
       if (data.url) {
         window.location.href = data.url
       } else if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl
+      } else if (data.voucherCode || data.voucher_code) {
+        // Non-Stripe flow: redirect to voucher page
+        const code = data.voucherCode || data.voucher_code
+        router.push('/voucher/' + code)
       } else if (data.error) {
         setError(data.error)
       } else {
@@ -68,16 +72,6 @@ export default function BuyButton({ dealId, dealTitle, dealPrice, merchantId }: 
           boxShadow: loading ? 'none' : '0 4px 20px rgba(45,90,58,0.4)',
           minHeight: '56px',
           WebkitTapHighlightColor: 'transparent',
-        }}
-        onMouseEnter={(e) => {
-          if (!loading) {
-            (e.target as HTMLButtonElement).style.transform = 'translateY(-1px)'
-            ;(e.target as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(45,90,58,0.5)'
-          }
-        }}
-        onMouseLeave={(e) => {
-          (e.target as HTMLButtonElement).style.transform = 'translateY(0)'
-          ;(e.target as HTMLButtonElement).style.boxShadow = loading ? 'none' : '0 4px 20px rgba(45,90,58,0.4)'
         }}
       >
         {loading ? (
@@ -119,6 +113,9 @@ export default function BuyButton({ dealId, dealTitle, dealPrice, merchantId }: 
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        button:active {
+          transform: scale(0.98);
         }
       `}</style>
     </div>
