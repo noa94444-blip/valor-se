@@ -83,37 +83,29 @@ export async function POST(request: NextRequest) {
     const voucherCode = generateVoucherCode()
     const totalPrice = deal.deal_price * quantity
 
-    // Save voucher to database (only using confirmed columns)
-    const { data: voucher, error: voucherError } = await adminSupabase
+    // Save voucher using only confirmed schema columns (code, deal_slug, quantity, used_count, status)
+    const insertData: Record<string, unknown> = {
+      code: voucherCode,
+      deal_slug: deal.slug || dealId,
+      quantity: quantity,
+      used_count: 0,
+      status: 'active',
+    }
+
+    const { error: voucherError } = await adminSupabase
       .from('vouchers')
-      .insert({
-        code: voucherCode,
-        deal_slug: deal.slug || dealId,
-        quantity: quantity,
-        used_count: 0,
-        total_price: totalPrice,
-        status: 'active',
-      })
-      .select()
-      .single()
+      .insert(insertData)
 
     if (voucherError) {
       console.error('[CHECKOUT] Failed to create voucher:', voucherError)
-      // Return the code even if save failed - log for manual recovery
-      return NextResponse.json({
-        success: true,
-        code: voucherCode,
-        dealTitle: deal.title,
-        totalPrice,
-        warning: 'Voucher save error',
-      })
+      // Still return code — log for manual recovery
+    } else {
+      // Update sold_count on the deal
+      await adminSupabase
+        .from('deals')
+        .update({ sold_count: (deal.sold_count || 0) + quantity })
+        .eq('id', dealId)
     }
-
-    // Update sold_count on the deal
-    await adminSupabase
-      .from('deals')
-      .update({ sold_count: (deal.sold_count || 0) + quantity })
-      .eq('id', dealId)
 
     return NextResponse.json({
       success: true,
