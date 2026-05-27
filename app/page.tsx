@@ -13,7 +13,7 @@ export const metadata = {
   openGraph: {
     title: 'Valör – Premium deals i din stad',
     description: 'Exklusiva erbjudanden på spa, restauranger och upplevelser.',
-    url: 'https://xn--valr-7qa.se',
+    url: 'https://xn--valr-ppa.se',
     siteName: 'Valör',
     locale: 'sv_SE',
     type: 'website',
