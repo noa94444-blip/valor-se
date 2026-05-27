@@ -2,7 +2,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import VoucherQR from './VoucherQR'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,113 +10,154 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const PRODUCTION_URL = 'https://xn--valr-ppa.se'
-
 export const metadata: Metadata = {
-  title: 'Din Kupong - Valor',
+  title: 'Din Kupong – Valor',
   description: 'Visa din Valor-kupong vid inlosen.',
   robots: { index: false, follow: false },
 }
 
 export default async function VoucherPage({ params }: { params: Promise<{ code: string }> }) {
   const resolvedParams = await params
+  // Search by uppercase code (codes are stored uppercase)
+  const upperCode = resolvedParams.code.toUpperCase()
   const { data: voucher } = await supabase
     .from('vouchers')
     .select('*')
-    .eq('code', resolvedParams.code.toLowerCase())
+    .eq('code', upperCode)
     .single()
 
-  if (!voucher) return notFound()
+  // Also try original case if uppercase didn't work
+  let finalVoucher = voucher
+  if (!finalVoucher) {
+    const { data: v2 } = await supabase
+      .from('vouchers')
+      .select('*')
+      .ilike('code', resolvedParams.code)
+      .single()
+    finalVoucher = v2
+  }
 
-  const isFullyUsed = voucher.status === 'fully_used' || voucher.status === 'redeemed'
-  const isActive = voucher.status === 'active' || voucher.status === 'pending'
-  const isCancelled = voucher.status === 'cancelled'
+  if (!finalVoucher) return notFound()
 
-  const usedCount = voucher.used_count || 0
-  const quantity = voucher.quantity || 1
+  const isFullyUsed = finalVoucher.status === 'fully_used' || finalVoucher.status === 'redeemed'
+  const isActive = finalVoucher.status === 'active' || finalVoucher.status === 'pending'
+  const isCancelled = finalVoucher.status === 'cancelled'
+
+  const usedCount = finalVoucher.used_count || 0
+  const quantity = finalVoucher.quantity || 1
   const remaining = Math.max(0, quantity - usedCount)
 
-  const dealTitle = voucher.deal_slug
-    ? voucher.deal_slug.replace(/-/g, ' ').replace(/\d+/g, '').trim()
+  const dealTitle = finalVoucher.deal_slug
+    ? finalVoucher.deal_slug.replace(/-/g, ' ').replace(/\d+/g, '').trim()
     : 'Valor Deal'
 
-  const statusLabel = isFullyUsed ? 'Anvand' : isCancelled ? 'Avbruten' : 'Giltig'
-  const statusColor = isFullyUsed
-    ? 'bg-red-950/50 text-red-300 border-red-800'
-    : isCancelled
-    ? 'bg-gray-800 text-gray-400 border-gray-700'
-    : 'bg-green-950/50 text-green-300 border-green-800'
+  const statusLabel = isFullyUsed ? 'Använd' : isCancelled ? 'Avbruten' : 'Giltig'
+  const statusBg = isFullyUsed ? '#3d1a1a' : isCancelled ? '#2d2d2d' : '#1a3d2a'
+  const statusColor = isFullyUsed ? '#e74c3c' : isCancelled ? '#888' : '#2ecc71'
 
-  const voucherUrl = `${PRODUCTION_URL}/voucher/${voucher.code}`
-  const purchaseDate = new Date(voucher.created_at).toLocaleDateString('sv-SE', {
+  const purchaseDate = new Date(finalVoucher.created_at).toLocaleDateString('sv-SE', {
     day: 'numeric', month: 'long', year: 'numeric'
   })
 
+  const totalPrice = finalVoucher.total_price
+    ? finalVoucher.total_price.toLocaleString('sv-SE')
+    : null
+
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="bg-gray-900 rounded-3xl p-8 text-center shadow-2xl border border-gray-800">
-          <div className="mb-6">
-            <p className="text-[#C9A84C] text-xs font-bold tracking-[0.3em] uppercase mb-1">VALOR</p>
-            <h1 className="text-xl font-bold text-white">Din Kupong</h1>
-            {dealTitle && (
-              <p className="text-gray-400 text-sm mt-1 capitalize">{dealTitle}</p>
-            )}
-          </div>
-
-          <div className="mb-6">
-            <VoucherQR voucherUrl={voucherUrl} isUsed={isFullyUsed} />
-          </div>
-
-          <div className="bg-gray-800 rounded-2xl py-3 px-4 mb-4 font-mono text-sm tracking-[0.2em] text-white select-all break-all border border-gray-700">
-            {voucher.code.toUpperCase()}
-          </div>
-
-          <div className={`rounded-2xl py-2.5 px-4 font-bold text-sm mb-5 border ${statusColor}`}>
-            {statusLabel}
-          </div>
-
-          <div className="text-sm text-gray-400 space-y-2 text-left bg-gray-800/50 rounded-2xl p-4 border border-gray-700/50">
-            {voucher.customer_name && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500">Kund</span>
-                <span className="text-gray-200 font-medium">{voucher.customer_name}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center">
-              <span className="text-gray-500">Kopdatum</span>
-              <span className="text-gray-200">{purchaseDate}</span>
-            </div>
-            {quantity > 1 && (
-              <>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Antal</span>
-                  <span className="text-gray-200">{quantity} st</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Anvanda</span>
-                  <span className="text-gray-200">{usedCount} / {quantity}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Kvar att anvanda</span>
-                  <span className={remaining === 0 ? 'text-red-400 font-bold' : 'text-green-400 font-bold'}>
-                    {remaining}
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-
-          {isActive && (
-            <p className="text-xs text-gray-500 mt-4 leading-relaxed">
-              Visa denna sida eller QR-koden for personalen vid inlosen.
-            </p>
-          )}
+    <div style={{
+      minHeight: '100vh',
+      background: '#1C1A17',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '40px 20px',
+      fontFamily: 'Inter, sans-serif',
+    }}>
+      <div style={{
+        background: '#242220',
+        border: '1px solid #3a3530',
+        borderRadius: '16px',
+        padding: '48px',
+        maxWidth: '520px',
+        width: '100%',
+        textAlign: 'center',
+      }}>
+        {/* Logo */}
+        <div style={{ color: '#C9A84C', fontSize: '28px', fontWeight: '700', letterSpacing: '0.15em', marginBottom: '32px', fontFamily: 'Playfair Display, serif' }}>
+          VALÖR
         </div>
 
-        <p className="text-center text-xs text-gray-600 mt-6">
-          valor.se - Saker kupong
-        </p>
+        {/* Status badge */}
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '8px 20px',
+          background: statusBg,
+          borderRadius: '100px',
+          marginBottom: '32px',
+        }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: statusColor }} />
+          <span style={{ color: statusColor, fontSize: '14px', fontWeight: '600' }}>{statusLabel}</span>
+        </div>
+
+        {/* Deal title */}
+        <h1 style={{ color: '#F5F2ED', fontSize: '28px', fontWeight: '600', margin: '0 0 8px', textTransform: 'capitalize', fontFamily: 'Playfair Display, serif' }}>
+          {dealTitle}
+        </h1>
+
+        {/* Voucher code */}
+        <div style={{ margin: '32px 0', padding: '24px', background: '#1C1A17', borderRadius: '12px', border: '1px solid #C9A84C33' }}>
+          <div style={{ color: '#8a8a7a', fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>
+            Kupongkod
+          </div>
+          <div style={{ color: '#C9A84C', fontSize: '28px', fontWeight: '700', letterSpacing: '0.15em', fontFamily: 'monospace' }}>
+            {upperCode}
+          </div>
+        </div>
+
+        {/* Details */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px', textAlign: 'left' }}>
+          {totalPrice && (
+            <div style={{ padding: '16px', background: '#1C1A17', borderRadius: '8px' }}>
+              <div style={{ color: '#8a8a7a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Betalt</div>
+              <div style={{ color: '#F5F2ED', fontSize: '16px', fontWeight: '600' }}>{totalPrice} kr</div>
+            </div>
+          )}
+          <div style={{ padding: '16px', background: '#1C1A17', borderRadius: '8px' }}>
+            <div style={{ color: '#8a8a7a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Återstår</div>
+            <div style={{ color: '#F5F2ED', fontSize: '16px', fontWeight: '600' }}>{remaining} av {quantity}</div>
+          </div>
+          <div style={{ padding: '16px', background: '#1C1A17', borderRadius: '8px' }}>
+            <div style={{ color: '#8a8a7a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Köpdatum</div>
+            <div style={{ color: '#F5F2ED', fontSize: '14px', fontWeight: '500' }}>{purchaseDate}</div>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        {isActive && (
+          <div style={{ padding: '20px', background: '#1a3d2a44', border: '1px solid #2D5A3A', borderRadius: '12px', marginBottom: '24px', textAlign: 'left' }}>
+            <div style={{ color: '#2ecc71', fontWeight: '600', marginBottom: '8px', fontSize: '14px' }}>
+              ✓ Hur du använder din kupong
+            </div>
+            <div style={{ color: '#a0a090', fontSize: '13px', lineHeight: '1.7' }}>
+              Visa den här sidan för personalen vid anläggningen. De scannar koden eller anger den manuellt.
+            </div>
+          </div>
+        )}
+
+        {isFullyUsed && (
+          <div style={{ padding: '20px', background: '#3d1a1a44', border: '1px solid #e74c3c55', borderRadius: '12px', marginBottom: '24px' }}>
+            <div style={{ color: '#e74c3c', fontWeight: '600', fontSize: '14px' }}>
+              Denna kupong har redan använts.
+            </div>
+          </div>
+        )}
+
+        {/* Back link */}
+        <a href="/deals" style={{ color: '#C9A84C', fontSize: '14px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          ← Se fler deals
+        </a>
       </div>
     </div>
   )
