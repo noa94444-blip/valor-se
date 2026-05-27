@@ -1,33 +1,26 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
-// ── Types ──────────────────────────────────────────────────
+// -- Types
 type Role = 'admin' | 'merchant' | 'customer' | null
-
 interface NavUser {
   email: string
   role: Role
 }
 
-// ── Supabase client (browser) ──────────────────────────────
-function getBrowserSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
-
-// ── NavbarClient ───────────────────────────────────────────
+// -- NavbarClient
 export default function NavbarClient() {
   const [user, setUser] = useState<NavUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
-    const supabase = getBrowserSupabase()
+    const supabase = createClient()
 
     async function loadUser() {
       try {
@@ -37,16 +30,15 @@ export default function NavbarClient() {
           setLoading(false)
           return
         }
-
-        // Hämta role från profiles-tabellen
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
           .single()
-
-        const role: Role = (profile?.role as Role) || 'customer'
-        setUser({ email: session.user.email || '', role })
+        setUser({
+          email: session.user.email ?? '',
+          role: (profile?.role as Role) ?? 'customer',
+        })
       } catch {
         setUser(null)
       } finally {
@@ -56,10 +48,10 @@ export default function NavbarClient() {
 
     loadUser()
 
-    // Lyssna på auth-ändringar (login/logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       if (!session) {
         setUser(null)
+        setLoading(false)
         return
       }
       loadUser()
@@ -68,181 +60,156 @@ export default function NavbarClient() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Vad ska visas beroende på roll
-  function getAccountLink(): { label: string; href: string; icon: string } {
-    if (!user) return { label: 'Logga in', href: '/logga-in', icon: '👤' }
-    switch (user.role) {
-      case 'admin':    return { label: 'Admin', href: '/admin', icon: '⚙️' }
-      case 'merchant': return { label: 'Merchant panel', href: '/merchant', icon: '🏪' }
-      default:         return { label: 'Mina sidor', href: '/konto', icon: '👤' }
-    }
+  function getAccountLink() {
+    if (!user) return { label: 'Mina sidor', href: '/konto' }
+    if (user.role === 'admin') return { label: 'Admin', href: '/admin' }
+    if (user.role === 'merchant') return { label: 'Merchant panel', href: '/merchant' }
+    return { label: 'Mina sidor', href: '/konto' }
   }
 
-  const accountLink = getAccountLink()
+  const al = getAccountLink()
+
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    setUser(null)
+    router.push('/')
+    router.refresh()
+  }
+
+  const navLinks: [string, string][] = [
+    ['Utforska', '/deals'],
+    ['Restaurang', '/deals?category=restaurang'],
+    ['Om oss', '/om-oss'],
+  ]
+
+  const baseNavStyle: React.CSSProperties = {
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
+    backgroundColor: 'rgba(10,8,6,0.95)',
+    backdropFilter: 'blur(20px)',
+    borderBottom: '1px solid rgba(201,168,76,0.12)',
+    height: '64px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  }
 
   return (
     <>
-      {/* ── Desktop right side ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="navbar-desktop">
-        {!loading && (
-          <Link href={accountLink.href} style={{
-            color: '#9B9589',
-            textDecoration: 'none',
-            fontSize: '14px',
-            fontWeight: '500',
-            padding: '8px 14px',
-            borderRadius: '8px',
-            display: 'flex', alignItems: 'center', gap: '6px',
-          }}>
-            <span style={{ fontSize: '16px' }}>{accountLink.icon}</span>
-            {accountLink.label}
-          </Link>
-        )}
-
-        {!user ? (
-          <Link href="/logga-in" style={{
-            backgroundColor: '#C9A84C',
-            color: '#0A0806',
-            textDecoration: 'none',
-            fontSize: '14px',
-            fontWeight: '700',
-            padding: '9px 20px',
-            borderRadius: '100px',
-            letterSpacing: '0.02em',
-            whiteSpace: 'nowrap',
-          }}>
-            Kom igång
-          </Link>
-        ) : (
-          <button
-            onClick={async () => {
-              const supabase = getBrowserSupabase()
-              await supabase.auth.signOut()
-              window.location.href = '/'
-            }}
-            style={{
-              backgroundColor: 'transparent',
-              border: '1px solid rgba(201,168,76,0.25)',
-              color: '#6B6560',
-              fontSize: '13px',
-              fontWeight: '500',
-              padding: '8px 16px',
-              borderRadius: '100px',
-              cursor: 'pointer',
-            }}
-          >
-            Logga ut
-          </button>
-        )}
-      </div>
-
-      {/* ── Mobile hamburger ── */}
-      <button
-        className="navbar-mobile-toggle"
-        onClick={() => setMenuOpen(!menuOpen)}
-        style={{
-          display: 'none',
-          background: 'none',
-          border: 'none',
-          color: '#C9A84C',
-          fontSize: '24px',
-          cursor: 'pointer',
-          padding: '4px 8px',
-        }}
-        aria-label="Meny"
-      >
-        {menuOpen ? '✕' : '☰'}
-      </button>
-
-      {/* ── Mobile menu ── */}
-      {menuOpen && (
-        <div style={{
-          position: 'fixed',
-          top: '64px',
-          left: 0,
-          right: 0,
-          backgroundColor: 'rgba(10,8,6,0.98)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(201,168,76,0.15)',
-          padding: '24px',
-          zIndex: 99,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px',
-        }}>
-          {[
-            ['Utforska', '/deals'],
-            ['Spa & Hälsa', '/deals?category=spa'],
-            ['Restauranger', '/deals?category=restauranger'],
-            ['Om oss', '/om-oss'],
-          ].map(([label, href]) => (
-            <Link key={label} href={href} onClick={() => setMenuOpen(false)} style={{
-              color: '#F5F2ED',
-              textDecoration: 'none',
-              fontSize: '18px',
-              fontWeight: '500',
-              padding: '14px 0',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
-            }}>
-              {label}
+      {/* Desktop */}
+      <nav className="vn-desktop" style={{ ...baseNavStyle, padding: '0 24px' }}>
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <span style={{ fontSize: '22px', fontWeight: '900', letterSpacing: '4px', color: '#C9A84C', fontFamily: 'Georgia, serif', textTransform: 'uppercase' }}>VALOR</span>
+        </Link>
+        <div style={{ display: 'flex', gap: '28px' }}>
+          {navLinks.map(([lbl, href]) => (
+            <Link key={href} href={href} style={{ color: '#C9C5BE', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>
+              {lbl}
             </Link>
           ))}
-
-          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <Link href={accountLink.href} onClick={() => setMenuOpen(false)} style={{
-              color: '#C9A84C',
-              textDecoration: 'none',
-              fontSize: '16px',
-              fontWeight: '600',
-              padding: '14px 0',
-            }}>
-              {accountLink.icon} {accountLink.label}
-            </Link>
-
-            {!user ? (
-              <Link href="/logga-in" onClick={() => setMenuOpen(false)} style={{
-                backgroundColor: '#C9A84C',
-                color: '#0A0806',
-                textDecoration: 'none',
-                fontSize: '16px',
-                fontWeight: '700',
-                padding: '14px 24px',
-                borderRadius: '100px',
-                textAlign: 'center',
-              }}>
-                Kom igång
-              </Link>
+        </div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {!loading && (
+            !user ? (
+              <>
+                <Link href="/logga-in" style={{ color: '#C9C5BE', textDecoration: 'none', fontSize: '14px', padding: '8px 18px', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '100px' }}>
+                  Logga in
+                </Link>
+                <Link href="/logga-in" style={{ backgroundColor: '#C9A84C', color: '#0A0806', textDecoration: 'none', fontSize: '14px', fontWeight: '700', padding: '8px 18px', borderRadius: '100px' }}>
+                  Kom igang
+                </Link>
+              </>
             ) : (
-              <button
-                onClick={async () => {
-                  const supabase = getBrowserSupabase()
-                  await supabase.auth.signOut()
-                  window.location.href = '/'
-                }}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: '1px solid rgba(201,168,76,0.25)',
-                  color: '#6B6560',
-                  fontSize: '15px',
-                  padding: '12px',
-                  borderRadius: '100px',
-                  cursor: 'pointer',
-                  width: '100%',
-                }}
-              >
-                Logga ut
-              </button>
+              <>
+                <Link href={al.href} style={{ color: '#C9C5BE', textDecoration: 'none', fontSize: '14px', padding: '8px 18px', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '100px' }}>
+                  {al.label}
+                </Link>
+                <button onClick={handleSignOut} style={{ background: 'transparent', border: '1px solid rgba(201,168,76,0.25)', color: '#6B6560', fontSize: '13px', padding: '8px 18px', borderRadius: '100px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  Logga ut
+                </button>
+              </>
+            )
+          )}
+        </div>
+      </nav>
+
+      {/* Mobile toggle bar */}
+      <nav className="vn-mobile" style={{ ...baseNavStyle, display: 'none', padding: '0 16px' }}>
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <span style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '4px', color: '#C9A84C', fontFamily: 'Georgia, serif', textTransform: 'uppercase' }}>VALOR</span>
+        </Link>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Meny"
+          style={{ background: 'transparent', border: 'none', color: '#C9A84C', fontSize: '22px', cursor: 'pointer', padding: '4px 8px' }}
+        >
+          {menuOpen ? 'X' : '='}
+        </button>
+      </nav>
+
+      {/* Mobile dropdown */}
+      {menuOpen && (
+        <div style={{ position: 'fixed', top: '64px', left: 0, right: 0, backgroundColor: 'rgba(10,8,6,0.98)', backdropFilter: 'blur(20px)', padding: '20px 24px', zIndex: 99, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {navLinks.map(([lbl, href]) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMenuOpen(false)}
+              style={{ color: '#C9C5BE', textDecoration: 'none', fontSize: '16px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(201,168,76,0.07)' }}
+            >
+              {lbl}
+            </Link>
+          ))}
+          <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {!loading && (
+              !user ? (
+                <>
+                  <Link
+                    href="/logga-in"
+                    onClick={() => setMenuOpen(false)}
+                    style={{ backgroundColor: '#C9A84C', color: '#0A0806', textDecoration: 'none', fontSize: '16px', fontWeight: '700', padding: '13px 20px', borderRadius: '100px', textAlign: 'center' }}
+                  >
+                    Kom igang
+                  </Link>
+                  <Link
+                    href="/logga-in"
+                    onClick={() => setMenuOpen(false)}
+                    style={{ color: '#C9C5BE', textDecoration: 'none', fontSize: '15px', padding: '11px 20px', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '100px', textAlign: 'center' }}
+                  >
+                    Logga in
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href={al.href}
+                    onClick={() => setMenuOpen(false)}
+                    style={{ backgroundColor: '#C9A84C', color: '#0A0806', textDecoration: 'none', fontSize: '16px', fontWeight: '700', padding: '13px 20px', borderRadius: '100px', textAlign: 'center' }}
+                  >
+                    {al.label}
+                  </Link>
+                  <button
+                    onClick={() => { setMenuOpen(false); handleSignOut() }}
+                    style={{ background: 'transparent', border: '1px solid rgba(201,168,76,0.25)', color: '#6B6560', fontSize: '15px', padding: '11px 20px', borderRadius: '100px', cursor: 'pointer', width: '100%' }}
+                  >
+                    Logga ut
+                  </button>
+                </>
+              )
             )}
           </div>
         </div>
       )}
 
-      {/* ── Responsive CSS ── */}
       <style>{`
         @media (max-width: 768px) {
-          .navbar-desktop { display: none !important; }
-          .navbar-mobile-toggle { display: block !important; }
-          .navbar-links { display: none !important; }
+          .vn-desktop { display: none !important; }
+          .vn-mobile { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .vn-mobile { display: none !important; }
         }
       `}</style>
     </>
