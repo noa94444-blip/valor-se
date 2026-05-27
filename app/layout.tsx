@@ -76,7 +76,7 @@ function NavBar() {
 
           <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
             <Link href="/deals" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Utforska</Link>
-            <Link href="/deals?kategori=Halsa" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Spa & Halsa</Link>
+            <Link href="/deals?kategori=Halsa" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Spa & Hälsa</Link>
             <Link href="/deals?kategori=Restaurang" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Restauranger</Link>
             <Link href="/om-oss" style={{ color: '#9B9589', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Om oss</Link>
           </div>
@@ -139,7 +139,7 @@ function NavBar() {
         <div style={{ flex: 1, padding: '16px 0' }}>
           {[
             { href: '/deals', label: 'Utforska deals' },
-            { href: '/deals?kategori=Halsa', label: 'Spa & Halsa' },
+            { href: '/deals?kategori=Halsa', label: 'Spa & Hälsa' },
             { href: '/deals?kategori=Restaurang', label: 'Restauranger' },
             { href: '/deals?kategori=Upplevelse', label: 'Upplevelser' },
             { href: '/om-oss', label: 'Om oss' },
@@ -238,7 +238,7 @@ function Footer() {
             <h4 style={{ color: '#C9A84C', fontSize: '11px', fontWeight: '700', letterSpacing: '2px', marginBottom: '16px', textTransform: 'uppercase' }}>UTFORSKA</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <Link href="/deals" style={{ color: '#6B6560', textDecoration: 'none', fontSize: '13px' }}>Alla deals</Link>
-              <Link href="/deals?kategori=Halsa" style={{ color: '#6B6560', textDecoration: 'none', fontSize: '13px' }}>Spa & Halsa</Link>
+              <Link href="/deals?kategori=Halsa" style={{ color: '#6B6560', textDecoration: 'none', fontSize: '13px' }}>Spa & Hälsa</Link>
               <Link href="/deals?kategori=Restaurang" style={{ color: '#6B6560', textDecoration: 'none', fontSize: '13px' }}>Restauranger</Link>
             </div>
           </div>
