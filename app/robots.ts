@@ -8,7 +8,7 @@ export default function robots() {
         disallow: ['/admin/', '/api/', '/konto/', '/logga-in/', '/registrera/'],
       },
     ],
-    sitemap: 'https://xn--valr-7qa.se/sitemap.xml',
-    host: 'https://xn--valr-7qa.se',
+    sitemap: 'https://xn--valr-ppa.se/sitemap.xml',
+    host: 'https://xn--valr-ppa.se',
   }
 }
