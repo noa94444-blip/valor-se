@@ -5,86 +5,146 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
 const VALOR_COMMISSION = 0.15
-const MERCHANT_SHARE = 0.85
 
 function fmt(n: number) {
-  return (n || 0).toLocaleString('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    return (n || 0).toLocaleString('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 export default function AdminPage() {
-  const [orders, setOrders] = useState<any[]>([])
-  const [deals, setDeals] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+    const [stats, setStats] = useState({ orders: 0, revenue: 0, valorCut: 0, deals: 0, activeDeals: 0 })
+    const [recentOrders, setRecentOrders] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function load() {
-      const [ordRes, dealRes] = await Promise.all([
-        supabase.from('orders').select('*').order('created_at', { ascending: false }),
-        supabase.from('deals').select('id, title, status, slug'),
-      ])
-      setOrders(ordRes.data || [])
-      setDeals(dealRes.data || [])
-      setLoading(false)
-    }
-    load()
+        async function load() {
+                const [ordRes, dealRes] = await Promise.all([
+                          supabase.from('orders').select('*').order('created_at', { ascending: false }),
+                          supabase.from('deals').select('id, title, status, slug'),
+                        ])
+                const orders = ordRes.data || []
+                        const deals = dealRes.data || []
+                                const paidOrders = orders.filter((o: any) => o.status === 'paid' || o.status === 'used')
+                const totalRevenue = paidOrders.reduce((sum: number, o: any) => sum + (o.amount || 0), 0)
+                setStats({
+                          orders: orders.length,
+                          revenue: totalRevenue,
+                          valorCut: totalRevenue * VALOR_COMMISSION,
+                          deals: deals.length,
+                          activeDeals: deals.filter((d: any) => d.status === 'active').length,
+                })
+                setRecentOrders(orders.slice(0, 8))
+                setLoading(false)
+        }
+        load()
   }, [])
 
-  const confirmed = orders.filter(o => o.status === 'confirmed' || o.status === 'completed')
-  const totalRevenue = confirmed.reduce((s, o) => s + (parseFloat(o.amount) || 0), 0)
-  const valorEarnings = totalRevenue * VALOR_COMMISSION
-  const merchantPayouts = totalRevenue * MERCHANT_SHARE
+  const statusColor = (s: string) => {
+        if (s === 'paid') return 'bg-green-100 text-green-800'
+        if (s === 'used') return 'bg-blue-100 text-blue-800'
+        if (s === 'pending') return 'bg-yellow-100 text-yellow-800'
+        return 'bg-gray-100 text-gray-600'
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F2ED' }}>
-      <header style={{ background: '#1C1A17', borderBottom: '1px solid #2a2825', padding: '0 32px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ color: '#C9A84C', fontWeight: 900, fontSize: 18, letterSpacing: 2 }}>VALOR</span>
-          <span style={{ background: '#C9A84C22', color: '#C9A84C', fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, border: '1px solid #C9A84C40' }}>ADMIN</span>
-        </div>
-        <nav style={{ display: 'flex', gap: 24 }}>
-          <Link href="/admin" style={{ color: '#C9A84C', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Dashboard</Link>
-          <Link href="/admin/payouts" style={{ color: '#999', fontSize: 13, textDecoration: 'none' }}>Utbetalningar</Link>
-          <Link href="/deals" style={{ color: '#555', fontSize: 12, textDecoration: 'none' }}>Hemsida</Link>
-        </nav>
-      </header>
-      <main style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Admin Dashboard</h1>
-        <p style={{ color: '#666', marginBottom: 32 }}>Oversikt over Valors verksamhet</p>
-        {loading ? <p>Laddar...</p> : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
-              <div style={{ background: '#fff', borderRadius: 16, padding: 20, border: '1px solid #e5e0d8' }}>
-                <p style={{ fontSize: 11, color: '#999', textTransform: 'uppercase' }}>Totalt inkasserat</p>
-                <p style={{ fontSize: 24, fontWeight: 700 }}>{fmt(totalRevenue)} kr</p>
-              </div>
-              <div style={{ background: '#1C1A17', borderRadius: 16, padding: 20 }}>
-                <p style={{ fontSize: 11, color: '#C9A84C', textTransform: 'uppercase' }}>Valors intjaning (15%)</p>
-                <p style={{ fontSize: 24, fontWeight: 700, color: '#C9A84C' }}>{fmt(valorEarnings)} kr</p>
-              </div>
-              <div style={{ background: '#fff', borderRadius: 16, padding: 20, border: '1px solid #e5e0d8' }}>
-                <p style={{ fontSize: 11, color: '#999', textTransform: 'uppercase' }}>Utbetalt foretag (85%)</p>
-                <p style={{ fontSize: 24, fontWeight: 700 }}>{fmt(merchantPayouts)} kr</p>
-              </div>
-            </div>
-            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid #e5e0d8' }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Senaste ordrar ({orders.length} totalt)</h2>
-              {orders.slice(0, 15).map(o => (
-                <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f0ece5' }}>
-                  <div>
-                    <p style={{ fontWeight: 600, fontSize: 14 }}>{o.customer_email || o.customer_name || 'Anonym'}</p>
-                    <p style={{ fontSize: 12, color: '#999' }}>{o.deal_slug} · {new Date(o.created_at).toLocaleDateString('sv-SE')}</p>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontWeight: 700 }}>{fmt(parseFloat(o.amount) || 0)} kr</p>
-                    <p style={{ fontSize: 11, color: o.status === 'confirmed' ? '#2D5A3A' : '#999', fontWeight: 600 }}>{o.status?.toUpperCase()}</p>
-                  </div>
-                </div>
-              ))}
-              {orders.length === 0 && <p style={{ color: '#999', textAlign: 'center', padding: 24 }}>Inga ordrar an</p>}
-            </div>
-          </>
-        )}
-      </main>
-    </div>
-  )
-}
+        <div className="min-h-screen bg-gray-50 flex">
+          {/* Sidebar */}
+              <aside className="w-64 bg-[#1a1a1a] text-white flex flex-col min-h-screen">
+                      <div className="p-6 border-b border-gray-700">
+                                <span className="text-2xl font-bold tracking-widest text-[#c9a84c]">VALOR</span>span>
+                                <p className="text-xs text-gray-400 mt-1">Admin Panel</p>p>
+                      </div>div>
+                      <nav className="flex-1 p-4 space-y-1">
+                                <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#c9a84c]/20 text-[#c9a84c] font-medium">
+                                            <span>📊</span>span> Dashboard
+                                </Link>Link>
+                                <Link href="/admin/orders" className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition">
+                                            <span>🧾</span>span> Orders
+                                </Link>Link>
+                                <Link href="/admin/payouts" className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition">
+                                            <span>💰</span>span> Utbetalningar
+                                </Link>Link>
+                                <Link href="/deals" className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition">
+                                            <span>🏷️</span>span> Se deals (live)
+                                </Link>Link>
+                      </nav>nav>
+                      <div className="p-4 border-t border-gray-700">
+                                <Link href="/konto" className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white text-sm transition">
+                                            <span>←</span>span> Tillbaka till konto
+                                </Link>Link>
+                      </div>div>
+              </aside>aside>
+        
+          {/* Main content */}
+              <main className="flex-1 p-8">
+                      <div className="mb-8">
+                                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>h1>
+                                <p className="text-gray-500 text-sm mt-1">Översikt för VALÖR-plattformen</p>p>
+                      </div>div>
+              
+                {loading ? (
+                    <div className="text-gray-400 text-center py-20">Laddar...</div>div>
+                  ) : (
+                    <>
+                      {/* Stats cards */}
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                                              <p className="text-sm text-gray-500">Totala orders</p>p>
+                                                              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.orders}</p>p>
+                                              </div>div>
+                                              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                                              <p className="text-sm text-gray-500">Total omsättning</p>p>
+                                                              <p className="text-3xl font-bold text-gray-900 mt-2">{fmt(stats.revenue / 100)} kr</p>p>
+                                              </div>div>
+                                              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                                              <p className="text-sm text-gray-500">VALÖR intäkt (15%)</p>p>
+                                                              <p className="text-3xl font-bold text-[#c9a84c] mt-2">{fmt(stats.valorCut / 100)} kr</p>p>
+                                              </div>div>
+                                              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                                              <p className="text-sm text-gray-500">Aktiva deals</p>p>
+                                                              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.activeDeals} / {stats.deals}</p>p>
+                                              </div>div>
+                                </div>div>
+                    
+                      {/* Recent orders */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+                                              <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                                                              <h2 className="font-semibold text-gray-900">Senaste orders</h2>h2>
+                                                              <Link href="/admin/orders" className="text-sm text-[#c9a84c] hover:underline">Visa alla →</Link>Link>
+                                              </div>div>
+                                              <div className="overflow-x-auto">
+                                                              <table className="w-full text-sm">
+                                                                                <thead className="bg-gray-50">
+                                                                                                    <tr>
+                                                                                                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>th>
+                                                                                                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Belopp</th>th>
+                                                                                                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>th>
+                                                                                                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>th>
+                                                                                                      </tr>tr>
+                                                                                </thead>thead>
+                                                                                <tbody className="divide-y divide-gray-100">
+                                                                                  {recentOrders.length === 0 ? (
+                                            <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-400">Inga orders ännu</td>td></tr>tr>
+                                          ) : recentOrders.map((o: any) => (
+                                            <tr key={o.id} className="hover:bg-gray-50">
+                                                                    <td className="px-6 py-4 font-mono text-xs text-gray-600">{o.id?.slice(0,8)}...</td>td>
+                                                                    <td className="px-6 py-4 font-medium">{fmt((o.amount || 0) / 100)} kr</td>td>
+                                                                    <td className="px-6 py-4">
+                                                                                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor(o.status)}`}>
+                                                                                                {o.status}
+                                                                                                </span>span>
+                                                                    </td>td>
+                                                                    <td className="px-6 py-4 text-gray-500">
+                                                                      {o.created_at ? new Date(o.created_at).toLocaleDateString('sv-SE') : '-'}
+                                                                    </td>td>
+                                            </tr>tr>
+                                          ))}
+                                                                                </tbody>tbody>
+                                                              </table>table>
+                                              </div>div>
+                                </div>div>
+                    </>>
+                  )}
+              </main>main>
+        </div>div>
+      )
+}</></div>
