@@ -1,145 +1,216 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@supabase/ssr'
 
 export default function NavbarClient() {
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
-    const supabase = createClient()
-    async function loadUser() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          setUser(null)
-          setLoading(false)
-          return
-        }
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single()
-        setUser({ email: session.user.email, role: profile?.role || 'customer' })
-      } catch (e) {
-        setUser(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadUser()
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        setUser(null)
-        router.push('/')
-      } else if (event === 'SIGNED_IN') {
-        loadUser()
-      }
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data?.user ?? null)
     })
-    return () => {
-      listener.subscription.unsubscribe()
-    }
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => listener?.subscription?.unsubscribe()
   }, [])
 
   const handleLogout = async () => {
-    const supabase = createClient()
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
     await supabase.auth.signOut()
+    window.location.href = '/'
   }
 
-  const accountLink = user ? (user.role === 'merchant' ? '/merchant' : '/konto') : '/logga-in'
-  const accountLabel = user ? (user.role === 'merchant' ? 'Merchant' : 'Mitt konto') : 'Logga in'
-
   return (
-    <nav className="valor-navbar">
-      <div className="valor-navbar-inner">
-        <Link href="/" className="valor-logo">VALOR</Link>
-        <div className="valor-desktop-links">
-          <Link href="/deals" className="valor-nav-link">Deals</Link>
-          <Link href="/how-it-works" className="valor-nav-link">Hur det fungerar</Link>
-          {!loading && user && (
-            <div className="valor-user-actions">
-              <Link href={accountLink} className="valor-account-link">{accountLabel}</Link>
-              <button onClick={handleLogout} className="valor-logout-btn">Logga ut</button>
-            </div>
-          )}
-          {!loading && !user && (
-            <Link href="/logga-in" className="valor-login-btn">Logga in</Link>
+    <>
+      <nav style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 24px',
+        height: '60px',
+        background: 'rgba(10, 5, 0, 0.95)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(201, 162, 39, 0.15)',
+      }}>
+        {/* Logo */}
+        <Link href="/" style={{
+          fontFamily: 'Georgia, serif',
+          fontWeight: 'bold',
+          fontSize: '1.4rem',
+          color: '#c9a227',
+          textDecoration: 'none',
+          letterSpacing: '0.1em',
+        }}>
+          VALOR
+        </Link>
+
+        {/* Desktop links */}
+        <div className="valor-desktop-links" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '32px',
+        }}>
+          <Link href="/deals" style={{ color: '#ccc', textDecoration: 'none', fontSize: '0.95rem' }}>
+            Deals
+          </Link>
+          <Link href="/hur-det-fungerar" style={{ color: '#ccc', textDecoration: 'none', fontSize: '0.95rem' }}>
+            Hur det fungerar
+          </Link>
+          {user ? (
+            <>
+              <Link href="/konto" style={{ color: '#c9a227', textDecoration: 'none', fontSize: '0.95rem', fontWeight: 600 }}>
+                Mitt konto
+              </Link>
+              <button onClick={handleLogout} style={{
+                padding: '8px 18px',
+                border: '1px solid #c9a227',
+                borderRadius: '6px',
+                background: 'transparent',
+                color: '#c9a227',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+              }}>
+                Logga ut
+              </button>
+            </>
+          ) : (
+            <Link href="/logga-in" style={{
+              padding: '8px 18px',
+              border: '1px solid #c9a227',
+              borderRadius: '6px',
+              background: 'transparent',
+              color: '#c9a227',
+              textDecoration: 'none',
+              fontSize: '0.9rem',
+            }}>
+              Logga in
+            </Link>
           )}
         </div>
-        <button className="valor-hamburger" onClick={() => setMenuOpen(!menuOpen)}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
-        </button>
-      </div>
-      {menuOpen && (
-        <div className="valor-mobile-menu">
-          <Link href="/deals" className="valor-mobile-link" onClick={() => setMenuOpen(false)}>Deals</Link>
-          <Link href="/how-it-works" className="valor-mobile-link" onClick={() => setMenuOpen(false)}>Hur det fungerar</Link>
-          {user ? (
-            <div>
-              <Link href={accountLink} className="valor-mobile-account" onClick={() => setMenuOpen(false)}>{accountLabel}</Link>
-              <button onClick={() => { handleLogout(); setMenuOpen(false) }} className="valor-mobile-logout">Logga ut</button>
-            </div>
+
+        {/* Mobile hamburger */}
+        <button
+          className="valor-hamburger"
+          onClick={() => setMenuOpen(!menuOpen)}
+          style={{
+            display: 'none',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '8px',
+            color: '#c9a227',
+          }}
+          aria-label="Meny"
+        >
+          {menuOpen ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
           ) : (
-            <Link href="/logga-in" className="valor-mobile-account" onClick={() => setMenuOpen(false)}>Logga in</Link>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          )}
+        </button>
+      </nav>
+
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <div className="valor-mobile-menu" style={{
+          position: 'fixed',
+          top: '60px',
+          left: 0,
+          right: 0,
+          zIndex: 99,
+          background: 'rgba(10, 5, 0, 0.98)',
+          borderBottom: '1px solid rgba(201, 162, 39, 0.2)',
+          padding: '20px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+        }}>
+          <Link href="/deals" onClick={() => setMenuOpen(false)} style={{
+            color: '#ccc', textDecoration: 'none', fontSize: '1.1rem', padding: '8px 0',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+          }}>
+            Deals
+          </Link>
+          <Link href="/hur-det-fungerar" onClick={() => setMenuOpen(false)} style={{
+            color: '#ccc', textDecoration: 'none', fontSize: '1.1rem', padding: '8px 0',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+          }}>
+            Hur det fungerar
+          </Link>
+          {user ? (
+            <>
+              <Link href="/konto" onClick={() => setMenuOpen(false)} style={{
+                color: '#c9a227', textDecoration: 'none', fontSize: '1.1rem', padding: '8px 0',
+                borderBottom: '1px solid rgba(255,255,255,0.05)',
+              }}>
+                Mitt konto
+              </Link>
+              <button onClick={handleLogout} style={{
+                padding: '12px',
+                border: '1px solid #c9a227',
+                borderRadius: '8px',
+                background: 'transparent',
+                color: '#c9a227',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                textAlign: 'left',
+              }}>
+                Logga ut
+              </button>
+            </>
+          ) : (
+            <Link href="/logga-in" onClick={() => setMenuOpen(false)} style={{
+              display: 'block',
+              padding: '12px',
+              border: '1px solid #c9a227',
+              borderRadius: '8px',
+              background: 'transparent',
+              color: '#c9a227',
+              textDecoration: 'none',
+              fontSize: '1rem',
+              textAlign: 'center',
+            }}>
+              Logga in
+            </Link>
           )}
         </div>
       )}
-      <style>{`
-        .valor-navbar {
-          position: sticky; top: 0; z-index: 100;
-          background: rgba(10,10,10,0.95);
-          backdrop-filter: blur(12px);
-          border-bottom: 1px solid rgba(196,151,74,0.2);
-        }
-        .valor-navbar-inner {
-          max-width: 1200px; margin: 0 auto;
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 0 24px; height: 64px;
-        }
-        .valor-logo {
-          font-size: 22px; font-weight: 700; color: #C4974A;
-          letter-spacing: 0.08em; text-decoration: none;
-        }
-        .valor-desktop-links { display: flex; gap: 32px; align-items: center; }
-        .valor-nav-link { color: #e5e5e5; text-decoration: none; font-size: 14px; }
-        .valor-user-actions { display: flex; gap: 16px; align-items: center; }
-        .valor-account-link { color: #C4974A; text-decoration: none; font-size: 14px; font-weight: 600; }
-        .valor-logout-btn {
-          background: transparent; border: 1px solid rgba(196,151,74,0.4);
-          color: #C4974A; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;
-        }
-        .valor-login-btn {
-          background: #C4974A; color: #0a0a0a; padding: 8px 20px;
-          border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: 600;
-        }
-        .valor-hamburger {
-          display: none; background: transparent; border: none; color: #C4974A; cursor: pointer; padding: 8px;
-        }
-        .valor-mobile-menu {
-          border-top: 1px solid rgba(196,151,74,0.15); padding: 16px 24px;
-          display: flex; flex-direction: column; gap: 16px;
-        }
-        .valor-mobile-link { color: #e5e5e5; text-decoration: none; font-size: 15px; }
-        .valor-mobile-account { color: #C4974A; text-decoration: none; font-size: 15px; font-weight: 600; display: block; }
-        .valor-mobile-logout {
-          background: transparent; border: none; color: #C4974A;
-          text-align: left; cursor: pointer; font-size: 15px; padding: 0;
-        }
+
+      <style jsx global>{`
         @media (max-width: 768px) {
-          .valor-desktop-links { display: none; }
-          .valor-hamburger { display: block; }
+          .valor-desktop-links { display: none !important; }
+          .valor-hamburger { display: block !important; }
+        }
+        @media (min-width: 769px) {
+          .valor-mobile-menu { display: none !important; }
         }
       `}</style>
-    </nav>
+
+      {/* Spacer for fixed navbar */}
+      <div style={{ height: '60px' }} />
+    </>
   )
 }
