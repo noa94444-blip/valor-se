@@ -255,7 +255,7 @@ export default async function DealPage({ params }: Props) {
                 <BuyButton
                   dealId={deal.id}
                   dealTitle={deal.title}
-                  dealPrice={deal.deal_price}
+                  price={deal.deal_price}
                   merchantId={deal.merchant_id}
                 />
 
