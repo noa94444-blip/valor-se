@@ -1,394 +1,211 @@
-// @ts-nocheck
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
 
-// -- Types
-interface VoucherRow {
-      id: string
-      code: string
-      status: string
-      used_at: string | null
-      created_at: string
-      expires_at: string | null
-      deal: {
-        title: string
-        merchant_name: string
-        price: number
-        original_price: number
-        image_url?: string
-      } | null
-}
-
-interface OrderRow {
-      id: string
-      amount: number
-      status: string
-      created_at: string
-}
-
-// -- Countdown hook
-function useCountdown(expiresAt) {
-      const [timeLeft, setTimeLeft] = useState('')
-      const [urgency, setUrgency] = useState('normal')
+export default function KontoPage() {
+  const [user, setUser] = useState(null)
+  const [vouchers, setVouchers] = useState([])
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('vouchers')
+  const router = useRouter()
 
   useEffect(() => {
-          if (!expiresAt) { setTimeLeft(''); return }
+    const supabase = createClient()
+    async function loadData() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/logga-in')
+        return
+      }
+      setUser(session.user)
+      const { data: voucherData } = await supabase
+        .from('vouchers')
+        .select('*, deal:deals(title, merchant_name, price, original_price, image_url, expires_at)')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+      setVouchers(voucherData || [])
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('*, deal:deals(title, merchant_name, price)')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+      setOrders(orderData || [])
+      setLoading(false)
+    }
+    loadData()
+  }, [])
 
-                function calc() {
-                          const diff = new Date(expiresAt).getTime() - Date.now()
-                          if (diff <= 0) { setTimeLeft('Utgangen'); setUrgency('critical'); return }
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
-            const days = Math.floor(diff / 86400000)
-                          const hours = Math.floor((diff % 86400000) / 3600000)
-                          const mins = Math.floor((diff % 3600000) / 60000)
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'Okant datum'
+    return new Date(dateStr).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' })
+  }
 
-            if (days > 7) { setTimeLeft(days + ' dagar kvar'); setUrgency('normal') }
-                          else if (days > 1) { setTimeLeft(days + ' dagar kvar'); setUrgency('soon') }
-                          else if (days === 1) { setTimeLeft('1 dag ' + hours + ' timmar kvar'); setUrgency('critical') }
-                          else if (hours > 0) { setTimeLeft(hours + ' tim ' + mins + ' min kvar'); setUrgency('critical') }
-                          else { setTimeLeft(mins + ' minuter kvar'); setUrgency('critical') }
-                }
+  const getDaysLeft = (expiresAt) => {
+    if (!expiresAt) return null
+    const diff = new Date(expiresAt).getTime() - Date.now()
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
+    if (days < 0) return 'Utgangen'
+    if (days === 0) return 'Sista dagen!'
+    if (days === 1) return '1 dag kvar'
+    if (days <= 7) return days + ' dagar kvar'
+    return null
+  }
 
-                calc()
-          const interval = setInterval(calc, 60000)
-          return () => clearInterval(interval)
-  }, [expiresAt])
+  const getUrgencyColor = (expiresAt) => {
+    if (!expiresAt) return '#10B981'
+    const diff = new Date(expiresAt).getTime() - Date.now()
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
+    if (days < 0) return '#6b7280'
+    if (days <= 3) return '#EF4444'
+    if (days <= 7) return '#F59E0B'
+    return '#10B981'
+  }
 
-  return { timeLeft, urgency }
-}
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#C4974A', fontSize: 18 }}>Laddar ditt konto...</div>
+      </div>
+    )
+  }
 
-// -- VoucherCard component
-function VoucherCard({ voucher }) {
-      const [expanded, setExpanded] = useState(false)
-      const { timeLeft, urgency } = useCountdown(voucher.expires_at)
-      const isUsed = voucher.status === 'used'
-      const isExpired = voucher.status === 'expired' || (voucher.expires_at && new Date(voucher.expires_at) < new Date())
-
-  const urgencyColor = urgency === 'critical' ? '#EF4444' : urgency === 'soon' ? '#F59E0B' : '#10B981'
+  const activeVouchers = vouchers.filter(v => v.status === 'active')
+  const usedVouchers = vouchers.filter(v => v.status === 'used')
 
   return (
-          <div style={{
-                    background: isUsed || isExpired ? 'rgba(255,255,255,0.03)' : 'rgba(196,151,74,0.06)',
-                    border: '1px solid ' + (isUsed || isExpired ? 'rgba(255,255,255,0.08)' : 'rgba(196,151,74,0.2)'),
-                    borderRadius: 12,
-                    padding: '20px',
-                    marginBottom: 16,
-                    opacity: isUsed || isExpired ? 0.6 : 1,
-          }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                                <div style={{ flex: 1 }}>
-                                              <div style={{ marginBottom: 8 }}>
-                                                  {isUsed && <span style={badgeStyle('#6B7280')}>Använd</span>span>}
-                                                  {isExpired && !isUsed && <span style={badgeStyle('#EF4444')}>Utgången</span>span>}
-                                                  {!isUsed && !isExpired && <span style={badgeStyle('#10B981')}>Aktiv</span>span>}
-                                              </div>div>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#e5e5e5' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
+          <div>
+            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#C4974A', margin: 0 }}>Mitt konto</h1>
+            <p style={{ color: '#9ca3af', marginTop: 4, marginBottom: 0 }}>{user?.email}</p>
+          </div>
+          <button onClick={handleLogout} style={{ background: 'transparent', border: '1px solid rgba(196,151,74,0.4)', color: '#C4974A', padding: '8px 20px', borderRadius: 4, cursor: 'pointer', fontSize: 14 }}>
+            Logga ut
+          </button>
+        </div>
 
-                                              <h3 style={{ margin: '0 0 4px', color: '#F5F2ED', fontSize: 16, fontWeight: 600 }}>
-                                                  {voucher.deal?.title ?? 'Deal'}
-                                              </h3>h3>
-                                              <p style={{ margin: '0 0 8px', color: '#9CA3AF', fontSize: 13 }}>
-                                                  {voucher.deal?.merchant_name}
-                                              </p>p>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 32, background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 4 }}>
+          {['vouchers', 'orders'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{ flex: 1, padding: '10px 20px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, background: activeTab === tab ? '#C4974A' : 'transparent', color: activeTab === tab ? '#0a0a0a' : '#9ca3af', transition: 'all 0.2s' }}
+            >
+              {tab === 'vouchers' ? 'Mina vouchers (' + vouchers.length + ')' : 'Orderhistorik (' + orders.length + ')'}
+            </button>
+          ))}
+        </div>
 
-                                    {timeLeft && !isUsed && !isExpired && (
-                          <div style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: 6,
-                                            background: urgencyColor + '15',
-                                            border: '1px solid ' + urgencyColor + '40',
-                                            borderRadius: 100,
-                                            padding: '4px 10px',
-                                            marginBottom: 8,
-                          }}>
-                                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: urgencyColor, display: 'inline-block' }} />
-                                            <span style={{ color: urgencyColor, fontSize: 12, fontWeight: 600 }}>{timeLeft}</span>span>
-                          </div>div>
-                        )}
-
-                                              <div style={{ color: '#6B7280', fontSize: 12, marginTop: 4 }}>
-                                                              Köpt: {new Date(voucher.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                              </div>div>
-                                    {voucher.expires_at && (
-                          <div style={{ color: '#6B7280', fontSize: 12 }}>
-                                            Giltig till: {new Date(voucher.expires_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' })}
-                          </div>div>
-                        )}
-                                    {voucher.deal && (
-                          <div style={{ color: '#C4974A', fontSize: 13, fontWeight: 600, marginTop: 6 }}>
-                              {voucher.deal.price} kr
-                              {voucher.deal.original_price > voucher.deal.price && (
-                                              <span style={{ color: '#6B7280', fontWeight: 400, textDecoration: 'line-through', marginLeft: 8, fontSize: 12 }}>
-                                                  {voucher.deal.original_price} kr
-                                              </span>span>
-                                            )}
-                          </div>div>
-                        )}
-                                </div>div>
-
-                        {!isUsed && !isExpired && (
-                        <button
-                                        onClick={() => setExpanded(!expanded)}
-                                        style={{
-                                                          background: expanded ? '#C4974A' : 'rgba(196,151,74,0.1)',
-                                                          border: '1px solid rgba(196,151,74,0.3)',
-                                                          borderRadius: 8,
-                                                          color: expanded ? '#0A0806' : '#C4974A',
-                                                          cursor: 'pointer',
-                                                          padding: '8px 14px',
-                                                          fontSize: 12,
-                                                          fontWeight: 600,
-                                                          whiteSpace: 'nowrap',
-                                        }}
-                                      >
-                            {expanded ? 'Dolj QR' : 'Visa QR'}
-                        </button>button>
-                            )}
-                    </div>div>
-          
-              {expanded && !isUsed && !isExpired && (
-                      <div style={{
-                                    marginTop: 20,
-                                    paddingTop: 20,
-                                    borderTop: '1px solid rgba(196,151,74,0.15)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    gap: 12,
-                      }}>
-                                <p style={{ color: '#9CA3AF', fontSize: 13, margin: 0 }}>
-                                            Visa denna kod for personalen vid besoket
-                                </p>p>
-                                <div style={{ background: '#F5F2ED', padding: 12, borderRadius: 8 }}>
-                                            <QRCodeSVG
-                                                              value={voucher.code}
-                                                              size={160}
-                                                              bgColor="#F5F2ED"
-                                                              fgColor="#0A0806"
-                                                              level="M"
-                                                            />
-                                </div>div>
-                                <div style={{
-                                      background: 'rgba(196,151,74,0.1)',
-                                      border: '1px solid rgba(196,151,74,0.2)',
-                                      borderRadius: 8,
-                                      padding: '8px 16px',
-                                      fontFamily: 'monospace',
-                                      fontSize: 16,
-                                      letterSpacing: '0.15em',
-                                      color: '#C4974A',
-                                      fontWeight: 700,
-                      }}>
-                                    {voucher.code}
-                                </div>div>
-                      </div>div>
-                )}
-          </div>div>
-        )
-}
-
-function badgeStyle(color) {
-      return {
-              display: 'inline-block',
-              background: color + '20',
-              border: '1px solid ' + color + '50',
-              borderRadius: 100,
-              padding: '2px 10px',
-              fontSize: 11,
-              fontWeight: 700,
-              color,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-      }
-}
-
-// -- Main KontoPage
-export default function KontoPage() {
-      const router = useRouter()
-            const [loading, setLoading] = useState(true)
-                  const [user, setUser] = useState(null)
-                        const [vouchers, setVouchers] = useState([])
-                              const [orders, setOrders] = useState([])
-                                    const [activeTab, setActiveTab] = useState('vouchers')
-                                        
-                                          const loadData = useCallback(async () => {
-                                                  const supabase = createClient()
-                                                          const { data: { session } } = await supabase.auth.getSession()
-                                                              
-                                                                  if (!session) {
-                                                                            router.push('/logga-in?redirect=/konto')
-                                                                                      return
-                                                                  }
-                                              
-                                                  setUser({ email: session.user.email ?? '', id: session.user.id })
-                                                      
-                                                          const { data: voucherData } = await supabase
-                                                                    .from('vouchers')
-                                                                    .select('id, code, status, used_at, created_at, expires_at, deal:deals(title, merchant_name, price, original_price, image_url)')
-                                                                    .eq('user_id', session.user.id)
-                                                                    .order('created_at', { ascending: false })
-                                                              
-                                                                  if (voucherData) setVouchers(voucherData)
-                                                                      
-                                                                          const { data: orderData } = await supabase
-                                                                                    .from('orders')
-                                                                                    .select('id, amount, status, created_at')
-                                                                                    .eq('user_id', session.user.id)
-                                                                                    .order('created_at', { ascending: false })
-                                                                              
-                                                                                  if (orderData) setOrders(orderData)
-                                                                                          setLoading(false)
-                                          }, [router])
-                                              
-                                                useEffect(() => { loadData() }, [loadData])
-                                                    
-                                                      async function handleLogout() {
-                                                              const supabase = createClient()
-                                                                      await supabase.auth.signOut()
-                                                                              router.push('/')
-                                                      }
-    
-      if (loading) {
-              return (
-                        <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0806' }}>
-                                <div style={{ color: '#C4974A', fontSize: 16 }}>Laddar ditt konto...</div>div>
-                        </div>div>
-                      )
-      }
-    
-      const activeVouchers = vouchers.filter(v => v.status === 'active' && (!v.expires_at || new Date(v.expires_at) > new Date()))
-            const usedVouchers = vouchers.filter(v => v.status === 'used')
-                  const expiredVouchers = vouchers.filter(v => v.status !== 'used' && v.expires_at && new Date(v.expires_at) <= new Date())
-                      
+        {activeTab === 'vouchers' && (
+          <div>
+            {vouchers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🎫</div>
+                <h3 style={{ color: '#C4974A', marginBottom: 8 }}>Inga vouchers an</h3>
+                <p style={{ color: '#6b7280', marginBottom: 24 }}>Utforska vara deals och kop din forsta voucher!</p>
+                <Link href="/deals" style={{ background: '#C4974A', color: '#0a0a0a', padding: '12px 28px', borderRadius: 4, textDecoration: 'none', fontWeight: 600 }}>
+                  Se alla deals
+                </Link>
+              </div>
+            ) : (
+              <div>
+                {activeVouchers.length > 0 && (
+                  <div style={{ marginBottom: 32 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 600, color: '#e5e5e5', marginBottom: 16 }}>Aktiva vouchers ({activeVouchers.length})</h2>
+                    <div style={{ display: 'grid', gap: 16 }}>
+                      {activeVouchers.map(v => {
+                        const daysLeft = getDaysLeft(v.deal?.expires_at)
+                        const urgencyColor = getUrgencyColor(v.deal?.expires_at)
                         return (
-                                <div style={{ minHeight: '100vh', background: '#0A0806', color: '#F5F2ED', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-                                      <div style={{ borderBottom: '1px solid rgba(201,168,76,0.15)', padding: '32px 24px 24px', maxWidth: 700, margin: '0 auto' }}>
-                                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                                                        <div>
-                                                                    <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#F5F2ED', fontFamily: 'Georgia, serif' }}>Mitt konto</h1>h1>
-                                                                    <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: 14 }}>{user?.email}</p>p>
-                                                        </div>div>
-                                                        <button onClick={handleLogout} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 100, color: '#6B7280', cursor: 'pointer', padding: '8px 16px', fontSize: 13 }}>
-                                                                    Logga ut
-                                                        </button>button>
-                                              </div>div>
-                                      
-                                              <div style={{ display: 'flex', gap: 16, marginTop: 24, flexWrap: 'wrap' }}>
-                                                  {[
-                                    { label: 'Aktiva vouchers', value: activeVouchers.length, color: '#10B981' },
-                                    { label: 'Anvanda deals', value: usedVouchers.length, color: '#C4974A' },
-                                    { label: 'Totala kop', value: orders.length, color: '#6B7280' },
-                                              ].map(s => (
-                                                              <div key={s.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '14px 20px', flex: '1 1 120px' }}>
-                                                                            <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>div>
-                                                                            <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{s.label}</div>div>
-                                                              </div>div>
-                                                            ))}
-                                              </div>div>
-                                      </div>div>
-                                
-                                      <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 24px' }}>
-                                              <div style={{ display: 'flex', borderBottom: '1px solid rgba(201,168,76,0.1)', marginTop: 24 }}>
-                                                  {['vouchers', 'orders'].map(tab => (
-                                                <button key={tab} onClick={() => setActiveTab(tab)} style={{
-                                                                  background: 'none', border: 'none',
-                                                                  borderBottom: '2px solid ' + (activeTab === tab ? '#C4974A' : 'transparent'),
-                                                                  color: activeTab === tab ? '#C4974A' : '#6B7280',
-                                                                  cursor: 'pointer', fontSize: 14,
-                                                                  fontWeight: activeTab === tab ? 600 : 400,
-                                                                  padding: '12px 20px', marginBottom: -1,
-                                                }}>
-                                                    {tab === 'vouchers' ? 'Mina vouchers (' + vouchers.length + ')' : 'Orderhistorik (' + orders.length + ')'}
-                                                </button>button>
-                                              ))}
-                                              </div>div>
-                                      
-                                              <div style={{ paddingTop: 24, paddingBottom: 60 }}>
-                                                  {activeTab === 'vouchers' && (
-                                                <>
-                                                    {vouchers.length === 0 ? (
-                                                                    <div style={{ textAlign: 'center', padding: '60px 24px' }}>
-                                                                                      <div style={{ fontSize: 40, marginBottom: 16 }}>✦</div>div>
-                                                                                      <h3 style={{ color: '#F5F2ED', margin: '0 0 8px', fontSize: 18 }}>Inga vouchers annu</h3>h3>
-                                                                                      <p style={{ color: '#6B7280', margin: '0 0 24px', fontSize: 14 }}>Utforska vara deals och kop din forsta voucher!</p>p>
-                                                                                      <Link href="/deals" style={{ color: '#0A0806', backgroundColor: '#C4974A', borderRadius: 100, padding: '12px 28px', textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>Utforska deals</Link>Link>
-                                                                    </div>div>
-                                                                  ) : (
-                                                                    <>
-                                                                        {activeVouchers.length > 0 && (
-                                                                                            <section style={{ marginBottom: 32 }}>
-                                                                                                                  <h2 style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>Aktiva ({activeVouchers.length})</h2>h2>
-                                                                                                {activeVouchers.map(v => <VoucherCard key={v.id} voucher={v} />)}
-                                                                                                </section>section>
-                                                                                      )}
-                                                                        {usedVouchers.length > 0 && (
-                                                                                            <section style={{ marginBottom: 32 }}>
-                                                                                                                  <h2 style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>Anvanda ({usedVouchers.length})</h2>h2>
-                                                                                                {usedVouchers.map(v => <VoucherCard key={v.id} voucher={v} />)}
-                                                                                                </section>section>
-                                                                                      )}
-                                                                        {expiredVouchers.length > 0 && (
-                                                                                            <section>
-                                                                                                                  <h2 style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>Utgangna ({expiredVouchers.length})</h2>h2>
-                                                                                                {expiredVouchers.map(v => <VoucherCard key={v.id} voucher={v} />)}
-                                                                                                </section>section>
-                                                                                      )}
-                                                                    </>>
-                                                                  )}
-                                                </>>
-                                              )}
-                                              
-                                                  {activeTab === 'orders' && (
-                                                <>
-                                                    {orders.length === 0 ? (
-                                                                    <div style={{ textAlign: 'center', padding: '60px 24px' }}>
-                                                                                      <div style={{ fontSize: 40, marginBottom: 16 }}>✦</div>div>
-                                                                                      <h3 style={{ color: '#F5F2ED', margin: '0 0 8px' }}>Inga kop annu</h3>h3>
-                                                                                      <p style={{ color: '#6B7280', margin: '0 0 24px', fontSize: 14 }}>Du har inte gjort nagra kop an.</p>p>
-                                                                                      <Link href="/deals" style={{ color: '#0A0806', backgroundColor: '#C4974A', borderRadius: 100, padding: '12px 28px', textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>Utforska deals</Link>Link>
-                                                                    </div>div>
-                                                                  ) : (
-                                                                    <div>
-                                                                        {orders.map(order => (
-                                                                                            <div key={order.id} style={{
-                                                                                                                      background: 'rgba(255,255,255,0.03)',
-                                                                                                                      border: '1px solid rgba(255,255,255,0.08)',
-                                                                                                                      borderRadius: 12,
-                                                                                                                      padding: '16px 20px',
-                                                                                                                      marginBottom: 12,
-                                                                                                                      display: 'flex',
-                                                                                                                      justifyContent: 'space-between',
-                                                                                                                      alignItems: 'center',
-                                                                                                                      flexWrap: 'wrap',
-                                                                                                                      gap: 8,
-                                                                                                }}>
-                                                                                                                  <div>
-                                                                                                                                          <div style={{ color: '#F5F2ED', fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
-                                                                                                                                                                    Order #{order.id.slice(0, 8).toUpperCase()}
-                                                                                                                                              </div>div>
-                                                                                                                                          <div style={{ color: '#6B7280', fontSize: 12 }}>
-                                                                                                                                              {new Date(order.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                                                                                                                              </div>div>
-                                                                                                                      </div>div>
-                                                                                                                  <div style={{ textAlign: 'right' }}>
-                                                                                                                                          <div style={{ color: '#C4974A', fontSize: 16, fontWeight: 700 }}>{order.amount} kr</div>div>
-                                                                                                                                          <span style={badgeStyle(order.status === 'completed' ? '#10B981' : order.status === 'pending' ? '#F59E0B' : '#6B7280')}>
-                                                                                                                                              {order.status === 'completed' ? 'Genomford' : order.status === 'pending' ? 'Behandlas' : order.status}
-                                                                                                                                              </span>span>
-                                                                                                                      </div>div>
-                                                                                                </div>div>
-                                                                                          ))}
-                                                                    </div>div>
-                                                              )}
-                                                </>>
-                                              )}
-                                              </div>div>
-                                      </div>div>
-                                </div>div>
-                              )
-                            }</></></></button>
+                          <div key={v.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(196,151,74,0.2)', borderRadius: 12, padding: 24, display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+                            <div style={{ flexShrink: 0 }}>
+                              <QRCodeSVG value={'VALOR-' + v.code} size={120} bgColor="#0a0a0a" fgColor="#C4974A" />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                                <h3 style={{ fontSize: 17, fontWeight: 600, color: '#e5e5e5', margin: 0 }}>{v.deal?.title || 'Deal'}</h3>
+                                <span style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>AKTIV</span>
+                              </div>
+                              <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 12 }}>{v.deal?.merchant_name}</p>
+                              <div style={{ fontFamily: 'monospace', fontSize: 18, color: '#C4974A', fontWeight: 700, marginBottom: 12, letterSpacing: '0.1em' }}>
+                                {v.code}
+                              </div>
+                              <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#6b7280' }}>
+                                <span>Kopt: {formatDate(v.created_at)}</span>
+                                {v.deal?.expires_at && <span>Utgar: {formatDate(v.deal.expires_at)}</span>}
+                              </div>
+                              {daysLeft && (
+                                <div style={{ marginTop: 12, display: 'inline-block', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + urgencyColor, borderRadius: 20, padding: '4px 12px', fontSize: 12, color: urgencyColor, fontWeight: 600 }}>
+                                  {daysLeft}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                {usedVouchers.length > 0 && (
+                  <div>
+                    <h2 style={{ fontSize: 18, fontWeight: 600, color: '#6b7280', marginBottom: 16 }}>Anvanda vouchers ({usedVouchers.length})</h2>
+                    <div style={{ display: 'grid', gap: 12 }}>
+                      {usedVouchers.map(v => (
+                        <div key={v.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.6 }}>
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>{v.deal?.title || 'Deal'}</div>
+                            <div style={{ fontSize: 12, color: '#6b7280' }}>{v.deal?.merchant_name} - Anvand: {formatDate(v.used_at)}</div>
+                          </div>
+                          <span style={{ background: 'rgba(107,114,128,0.2)', color: '#6b7280', padding: '4px 12px', borderRadius: 20, fontSize: 12 }}>ANVAND</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'orders' && (
+          <div>
+            {orders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
+                <h3 style={{ color: '#C4974A', marginBottom: 8 }}>Ingen orderhistorik</h3>
+                <p style={{ color: '#6b7280' }}>Dina kop kommer att visas har.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 12 }}>
+                {orders.map(order => (
+                  <div key={order.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(196,151,74,0.1)', borderRadius: 12, padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>{order.deal?.title || 'Order'}</div>
+                      <div style={{ fontSize: 13, color: '#6b7280' }}>{order.deal?.merchant_name} - {formatDate(order.created_at)}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: '#C4974A' }}>{order.amount_paid || order.deal?.price} kr</div>
+                      <div style={{ fontSize: 12, color: '#10B981', marginTop: 4 }}>{order.status || 'Genomford'}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
