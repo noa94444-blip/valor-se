@@ -21,68 +21,112 @@ export default function NewsletterSignup() {
       const data = await res.json()
       if (res.ok) {
         setStatus('success')
-        setMessage(data.message || 'Tack! Du ar nu prenumerant.')
+        setMessage(data.message || 'Tack! Du är nu prenumerant.')
         setEmail('')
         setName('')
       } else {
         setStatus('error')
-        setMessage(data.error || 'Nagot gick fel.')
+        setMessage(data.error || 'Något gick fel. Försök igen.')
       }
     } catch (err) {
       setStatus('error')
-      setMessage('Kunde inte ansluta. Forsok igen.')
+      setMessage('Något gick fel. Försök igen.')
     }
   }
 
-  if (status === 'success') {
-    return (
-      <section style={{ background: 'linear-gradient(135deg, rgba(196,151,74,0.08) 0%, rgba(196,151,74,0.03) 100%)', border: '1px solid rgba(196,151,74,0.2)', borderRadius: 20, padding: '48px 40px', maxWidth: 560, margin: '0 auto 48px', textAlign: 'center' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-        <h3 style={{ color: '#C4974A', fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Du ar inlagd!</h3>
-        <p style={{ color: '#9ca3af', fontSize: 15 }}>{message}</p>
-      </section>
-    )
-  }
-
   return (
-    <section style={{ background: 'linear-gradient(135deg, rgba(196,151,74,0.08) 0%, rgba(196,151,74,0.03) 100%)', border: '1px solid rgba(196,151,74,0.2)', borderRadius: 20, padding: '48px 40px', maxWidth: 560, margin: '0 auto 48px', textAlign: 'center' }}>
-      <div style={{ fontSize: 32, marginBottom: 16 }}>✉️</div>
-      <h3 style={{ color: '#F5F2ED', fontSize: 24, fontWeight: 700, marginBottom: 8, fontFamily: 'Georgia, serif' }}>
-        Fa exklusiva deals forst
-      </h3>
-      <p style={{ color: '#6B6560', fontSize: 15, marginBottom: 28, maxWidth: 360, margin: '0 auto 28px' }}>
-        Prenumerera pa vara nyhetsbrev och fa premium deals direkt i inkorgen.
-      </p>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <input
-          type="text"
-          placeholder="Ditt fornamn (valfritt)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{ padding: '12px 16px', borderRadius: 8, border: '1px solid rgba(196,151,74,0.3)', background: 'rgba(255,255,255,0.05)', color: '#F5F2ED', fontSize: 15, outline: 'none' }}
-        />
-        <input
-          type="email"
-          placeholder="Din e-postadress"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ padding: '12px 16px', borderRadius: 8, border: '1px solid rgba(196,151,74,0.3)', background: 'rgba(255,255,255,0.05)', color: '#F5F2ED', fontSize: 15, outline: 'none' }}
-        />
-        <button
-          type="submit"
-          disabled={status === 'loading'}
-          style={{ padding: '14px', background: 'linear-gradient(135deg, #C9A84C 0%, #9A7A1A 100%)', color: '#0A0806', fontWeight: 700, fontSize: 15, borderRadius: 8, border: 'none', cursor: 'pointer', opacity: status === 'loading' ? 0.7 : 1 }}
-        >
-          {status === 'loading' ? 'Skickar...' : 'Prenumerera gratis'}
-        </button>
-        {status === 'error' && (
-          <p style={{ color: '#EF4444', fontSize: 13, marginTop: 4 }}>{message}</p>
-        )}
-        <p style={{ color: '#4B4843', fontSize: 11, marginTop: 8 }}>
-          GDPR-skyddat. Avprenumerera nar som helst. Inga spammail.
+    <section style={{
+      background: 'linear-gradient(135deg, #1a0a00 0%, #2d1500 100%)',
+      padding: '60px 20px',
+      textAlign: 'center',
+    }}>
+      <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+        <h2 style={{
+          fontFamily: 'Georgia, serif',
+          fontSize: '2rem',
+          fontWeight: 'bold',
+          color: '#fff',
+          marginBottom: '12px',
+        }}>
+          Få exklusiva deals först
+        </h2>
+        <p style={{
+          color: '#aaa',
+          marginBottom: '28px',
+          lineHeight: '1.6',
+        }}>
+          Prenumerera på våra nyhetsbrev och få premium deals direkt i inkorgen.
         </p>
-      </form>
+
+        {status === 'success' ? (
+          <div style={{
+            background: '#1a3a1a',
+            border: '1px solid #2d6a2d',
+            borderRadius: '12px',
+            padding: '20px',
+            color: '#4caf50',
+            fontSize: '1rem',
+          }}>
+            ✓ {message}
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <input
+              type="text"
+              placeholder="Ditt förnamn (valfritt)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={{
+                padding: '14px 18px',
+                borderRadius: '8px',
+                border: '1px solid #333',
+                background: '#1a0e00',
+                color: '#fff',
+                fontSize: '1rem',
+                outline: 'none',
+              }}
+            />
+            <input
+              type="email"
+              placeholder="Din e-postadress"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{
+                padding: '14px 18px',
+                borderRadius: '8px',
+                border: '1px solid #333',
+                background: '#1a0e00',
+                color: '#fff',
+                fontSize: '1rem',
+                outline: 'none',
+              }}
+            />
+            {status === 'error' && (
+              <p style={{ color: '#f44336', fontSize: '0.9rem', margin: 0 }}>{message}</p>
+            )}
+            <button
+              type="submit"
+              disabled={status === 'loading'}
+              style={{
+                padding: '14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: status === 'loading' ? '#7a6020' : '#c9a227',
+                color: '#000',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                cursor: status === 'loading' ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {status === 'loading' ? 'Skickar...' : 'Prenumerera gratis'}
+            </button>
+            <p style={{ color: '#666', fontSize: '0.8rem', margin: 0 }}>
+              GDPR-skyddat. Avprenumerera när som helst. Inga spammail.
+            </p>
+          </form>
+        )}
+      </div>
     </section>
   )
 }
