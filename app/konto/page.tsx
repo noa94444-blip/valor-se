@@ -1,217 +1,492 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState, useEffect, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import QRCode from 'qrcode'
 
-const G = '#1A3A2A'
-const AU = '#C4974A'
-const IV = '#F5F2ED'
-const WH = '#FFFFFF'
-const GR = '#6B7280'
-const LG = '#E8E4DE'
+// -- Types
+interface VoucherRow {
+    id: string
+    code: string
+    status: string
+    used_at: string | null
+    created_at: string
+    expires_at: string | null
+    deal: {
+      title: string
+      merchant_name: string
+      price: number
+      original_price: number
+      image_url?: string
+    } | null
+}
 
-export default function KontoPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const [vouchers, setVouchers] = useState<any[]>([])
-  const [orders, setOrders] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'vouchers' | 'orders' | 'settings'>('vouchers')
+interface OrderRow {
+    id: string
+    amount: number
+    status: string
+    created_at: string
+    deal_title?: string
+}
+
+// -- Countdown hook
+function useCountdown(expiresAt: string | null) {
+    const [timeLeft, setTimeLeft] = useState('')
+    const [urgency, setUrgency] = useState<'normal' | 'soon' | 'critical'>('normal')
 
   useEffect(() => {
-    loadData()
-  }, [])
+        if (!expiresAt) { setTimeLeft(''); return }
 
-  async function loadData() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/logga-in')
-      return
-    }
-    setUser(user)
+                function calc() {
+                        const diff = new Date(expiresAt!).getTime() - Date.now()
+                        if (diff <= 0) { setTimeLeft('Utgangen'); setUrgency('critical'); return }
 
-    // Get profile
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-    setProfile(profileData)
+          const days = Math.floor(diff / 86400000)
+                        const hours = Math.floor((diff % 86400000) / 3600000)
+                        const mins = Math.floor((diff % 3600000) / 60000)
 
-    // Get vouchers
-    const { data: voucherData } = await supabase
-      .from('vouchers')
-      .select('*, deals(title, image_url, deal_price, merchants(name, address, city))')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-    setVouchers(voucherData || [])
+          if (days > 7) { setTimeLeft(`${days} dagar kvar`); setUrgency('normal') }
+                        else if (days > 1) { setTimeLeft(`${days} dagar kvar`); setUrgency('soon') }
+                        else if (days === 1) { setTimeLeft(`1 dag ${hours} timmar kvar`); setUrgency('critical') }
+                        else if (hours > 0) { setTimeLeft(`${hours} tim ${mins} min kvar`); setUrgency('critical') }
+                        else { setTimeLeft(`${mins} minuter kvar`); setUrgency('critical') }
+                }
 
-    // Get orders
-    const { data: orderData } = await supabase
-      .from('orders')
-      .select('*, deals(title, deal_price, image_url, merchants(name))')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-    setOrders(orderData || [])
+                calc()
+        const interval = setInterval(calc, 60000)
+        return () => clearInterval(interval)
+  }, [expiresAt])
 
-    setLoading(false)
-  }
+  return { timeLeft, urgency }
+}
 
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
+// -- QR Display component
+function QRDisplay({ code }: { code: string }) {
+    const [qrUrl, setQrUrl] = useState('')
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', backgroundColor: IV, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
-        <div style={{ textAlign: 'center', color: GR }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>⟳</div>
-          <p>Laddar ditt konto...</p>
-        </div>
-      </div>
-    )
-  }
+  useEffect(() => {
+        QRCode.toDataURL(code, {
+                width: 200,
+                margin: 2,
+                color: { dark: '#0A0806', light: '#F5F2ED' },
+        }).then(setQrUrl).catch(() => setQrUrl(''))
+  }, [code])
+
+  if (!qrUrl) return (
+        <div style={{ width: 160, height: 160, background: '#1a1612', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: '#6B7280', fontSize: 12 }}>Laddar QR...</span>span>
+        </div>div>
+      )
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: IV, fontFamily: 'Inter, sans-serif' }}>
-      {/* Header */}
-      <div style={{ backgroundColor: G, padding: '40px 24px 30px' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div>
-            <div style={{ fontSize: 11, letterSpacing: 4, color: AU, textTransform: 'uppercase', marginBottom: 8 }}>Mitt konto</div>
-            <h1 style={{ fontSize: 32, fontFamily: 'Georgia, serif', color: WH, fontWeight: 400, margin: 0 }}>
-              {profile?.full_name || user?.email?.split('@')[0] || 'Välkommen'}
-            </h1>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, margin: '8px 0 0' }}>{user?.email}</p>
-          </div>
-          <button onClick={handleLogout}
-            style={{ padding: '10px 20px', backgroundColor: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: WH, borderRadius: 8, cursor: 'pointer', fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
-            Logga ut
-          </button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div style={{ backgroundColor: WH, borderBottom: `1px solid ${LG}` }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '16px 24px', display: 'flex', gap: 40 }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: G }}>{vouchers.length}</div>
-            <div style={{ fontSize: 12, color: GR }}>Vouchers</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: G }}>{orders.length}</div>
-            <div style={{ fontSize: 12, color: GR }}>Beställningar</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: G }}>
-              {orders.reduce((sum, o) => sum + (o.total_price || 0), 0)} kr
-            </div>
-            <div style={{ fontSize: 12, color: GR }}>Totalt sparat</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ backgroundColor: WH, borderBottom: `1px solid ${LG}`, position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 0 }}>
-          {([['vouchers', 'Mina Vouchers'], ['orders', 'Beställningar'], ['settings', 'Inställningar']] as const).map(([tab, label]) => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              style={{ padding: '16px 24px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, color: activeTab === tab ? G : GR, borderBottom: activeTab === tab ? `2px solid ${G}` : '2px solid transparent', fontFamily: 'Inter, sans-serif', fontWeight: activeTab === tab ? 600 : 400 }}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px' }}>
-        
-        {/* Vouchers Tab */}
-        {activeTab === 'vouchers' && (
-          <div>
-            {vouchers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 0', color: GR }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🎫</div>
-                <p style={{ margin: 0 }}>Inga vouchers än. <a href="/deals" style={{ color: G }}>Hitta deals →</a></p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gap: 16 }}>
-                {vouchers.map(v => (
-                  <div key={v.id} style={{ backgroundColor: WH, borderRadius: 12, padding: 24, border: `1px solid ${LG}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: 11, color: AU, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>{v.deals?.merchants?.name}</div>
-                      <div style={{ fontSize: 16, color: G, fontFamily: 'Georgia, serif', marginBottom: 8 }}>{v.deals?.title}</div>
-                      <div style={{ fontSize: 13, color: GR }}>📍 {v.deals?.merchants?.address}, {v.deals?.merchants?.city}</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: 3, color: G, fontFamily: 'monospace', marginBottom: 6 }}>{v.code}</div>
-                      <div style={{ display: 'inline-block', padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                        backgroundColor: v.status === 'active' ? '#ECFDF5' : v.status === 'used' ? '#F3F4F6' : '#FEF2F2',
-                        color: v.status === 'active' ? '#059669' : v.status === 'used' ? GR : '#DC2626' }}>
-                        {v.status === 'active' ? '✓ Aktiv' : v.status === 'used' ? '✗ Använd' : '⚠ Utgången'}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Orders Tab */}
-        {activeTab === 'orders' && (
-          <div>
-            {orders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 0', color: GR }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>📦</div>
-                <p style={{ margin: 0 }}>Inga beställningar än.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gap: 12 }}>
-                {orders.map(o => (
-                  <div key={o.id} style={{ backgroundColor: WH, borderRadius: 12, padding: 20, border: `1px solid ${LG}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: 15, color: G, fontFamily: 'Georgia, serif', marginBottom: 4 }}>{o.deals?.title}</div>
-                      <div style={{ fontSize: 13, color: GR }}>
-                        {new Date(o.created_at).toLocaleDateString('sv-SE')} · Antal: {o.quantity}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: G }}>{o.total_price} kr</div>
-                      <div style={{ fontSize: 11, color: o.status === 'paid' ? '#059669' : GR, marginTop: 4 }}>
-                        {o.status === 'paid' ? '✓ Betald' : o.status === 'pending' ? '⏳ Väntar' : '✗ Avbruten'}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Settings Tab */}
-        {activeTab === 'settings' && (
-          <div style={{ backgroundColor: WH, borderRadius: 12, padding: 32, border: `1px solid ${LG}`, maxWidth: 500 }}>
-            <h2 style={{ fontSize: 18, color: G, fontFamily: 'Georgia, serif', fontWeight: 400, margin: '0 0 24px' }}>Kontoinställningar</h2>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 13, color: G, marginBottom: 6, fontWeight: 500 }}>Namn</label>
-              <input type="text" defaultValue={profile?.full_name || ''}
-                style={{ width: '100%', padding: '12px 16px', border: `1px solid ${LG}`, borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }} />
-            </div>
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 13, color: G, marginBottom: 6, fontWeight: 500 }}>E-post</label>
-              <input type="email" defaultValue={user?.email || ''} disabled
-                style={{ width: '100%', padding: '12px 16px', border: `1px solid ${LG}`, borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', backgroundColor: IV, boxSizing: 'border-box' }} />
-            </div>
-            <button style={{ padding: '12px 24px', backgroundColor: G, color: AU, border: 'none', borderRadius: 8, fontSize: 14, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-              Spara ändringar
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
+        <div style={{ background: '#F5F2ED', padding: 12, borderRadius: 8, display: 'inline-block' }}>
+                <img src={qrUrl} alt={`QR-kod: ${code}`} style={{ width: 160, height: 160, display: 'block' }} />
+        </div>div>
+      )
 }
+
+// -- VoucherCard component
+function VoucherCard({ voucher }: { voucher: VoucherRow }) {
+    const [expanded, setExpanded] = useState(false)
+    const { timeLeft, urgency } = useCountdown(voucher.expires_at)
+    const isUsed = voucher.status === 'used'
+    const isExpired = voucher.status === 'expired' || (voucher.expires_at && new Date(voucher.expires_at) < new Date())
+
+  const urgencyColor = urgency === 'critical' ? '#EF4444' : urgency === 'soon' ? '#F59E0B' : '#10B981'
+
+  return (
+        <div style={{
+                background: isUsed || isExpired ? 'rgba(255,255,255,0.03)' : 'rgba(196,151,74,0.06)',
+                border: `1px solid ${isUsed || isExpired ? 'rgba(255,255,255,0.08)' : 'rgba(196,151,74,0.2)'}`,
+                borderRadius: 12,
+                padding: '20px',
+                marginBottom: 16,
+                opacity: isUsed || isExpired ? 0.6 : 1,
+                transition: 'all 0.2s',
+        }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                          <div style={{ flex: 1 }}>
+                            {/* Status badge */}
+                                      <div style={{ marginBottom: 8 }}>
+                                        {isUsed && <span style={badgeStyle('#6B7280')}>Använd</span>span>}
+                                        {isExpired && !isUsed && <span style={badgeStyle('#EF4444')}>Utgången</span>span>}
+                                        {!isUsed && !isExpired && <span style={badgeStyle('#10B981')}>Aktiv</span>span>}
+                                      </div>div>
+
+                                      <h3 style={{ margin: '0 0 4px', color: '#F5F2ED', fontSize: 16, fontWeight: 600 }}>
+                                        {voucher.deal?.title ?? 'Deal'}
+                                      </h3>h3>
+                                      <p style={{ margin: '0 0 8px', color: '#9CA3AF', fontSize: 13 }}>
+                                        {voucher.deal?.merchant_name}
+                                      </p>p>
+
+                            {/* Countdown */}
+                            {timeLeft && !isUsed && !isExpired && (
+                      <div style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 6,
+                                      background: `${urgencyColor}15`,
+                                      border: `1px solid ${urgencyColor}40`,
+                                      borderRadius: 100,
+                                      padding: '4px 10px',
+                                      marginBottom: 8,
+                      }}>
+                                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: urgencyColor, display: 'inline-block' }} />
+                                      <span style={{ color: urgencyColor, fontSize: 12, fontWeight: 600 }}>{timeLeft}</span>span>
+                      </div>div>
+                    )}
+
+                                      <div style={{ color: '#6B7280', fontSize: 12, marginTop: 4 }}>
+                                                    Köpt: {new Date(voucher.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                      </div>div>
+                            {voucher.expires_at && (
+                      <div style={{ color: '#6B7280', fontSize: 12 }}>
+                                      Giltig till: {new Date(voucher.expires_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </div>div>
+                    )}
+                            {voucher.deal && (
+                      <div style={{ color: '#C4974A', fontSize: 13, fontWeight: 600, marginTop: 6 }}>
+                        {voucher.deal.price} kr
+                        {voucher.deal.original_price > voucher.deal.price && (
+                                        <span style={{ color: '#6B7280', fontWeight: 400, textDecoration: 'line-through', marginLeft: 8, fontSize: 12 }}>
+                                          {voucher.deal.original_price} kr
+                                        </span>span>
+                                      )}
+                      </div>div>
+                    )}
+                          </div>div>
+
+                  {/* Show QR button */}
+                  {!isUsed && !isExpired && (
+                    <button
+                                  onClick={() => setExpanded(!expanded)}
+                                  style={{
+                                                  background: expanded ? '#C4974A' : 'rgba(196,151,74,0.1)',
+                                                  border: '1px solid rgba(196,151,74,0.3)',
+                                                  borderRadius: 8,
+                                                  color: expanded ? '#0A0806' : '#C4974A',
+                                                  cursor: 'pointer',
+                                                  padding: '8px 14px',
+                                                  fontSize: 12,
+                                                  fontWeight: 600,
+                                                  whiteSpace: 'nowrap',
+                                                  transition: 'all 0.2s',
+                                  }}
+                                >
+                      {expanded ? 'Dölj QR' : 'Visa QR'}
+                    </button>button>
+                        )}
+                </div>div>
+        
+          {/* QR Code expanded */}
+          {expanded && !isUsed && !isExpired && (
+                  <div style={{
+                              marginTop: 20,
+                              paddingTop: 20,
+                              borderTop: '1px solid rgba(196,151,74,0.15)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: 12,
+                  }}>
+                            <p style={{ color: '#9CA3AF', fontSize: 13, margin: 0 }}>
+                                        Visa denna kod för personalen vid besöket
+                            </p>p>
+                            <QRDisplay code={voucher.code} />
+                            <div style={{
+                                background: 'rgba(196,151,74,0.1)',
+                                border: '1px solid rgba(196,151,74,0.2)',
+                                borderRadius: 8,
+                                padding: '8px 16px',
+                                fontFamily: 'monospace',
+                                fontSize: 16,
+                                letterSpacing: '0.15em',
+                                color: '#C4974A',
+                                fontWeight: 700,
+                  }}>
+                              {voucher.code}
+                            </div>div>
+                  </div>div>
+              )}
+        </div>div>
+      )
+}
+
+function badgeStyle(color: string): React.CSSProperties {
+    return {
+          display: 'inline-block',
+          background: `${color}20`,
+          border: `1px solid ${color}50`,
+          borderRadius: 100,
+          padding: '2px 10px',
+          fontSize: 11,
+          fontWeight: 700,
+          color,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+    }
+}
+
+// -- Main KontoPage
+export default function KontoPage() {
+    const router = useRouter()
+        const [loading, setLoading] = useState(true)
+            const [user, setUser] = useState<{ email: string; id: string } | null>(null)
+                const [vouchers, setVouchers] = useState<VoucherRow[]>([])
+                    const [orders, setOrders] = useState<OrderRow[]>([])
+                        const [activeTab, setActiveTab] = useState<'vouchers' | 'orders'>('vouchers')
+                          
+                            const loadData = useCallback(async () => {
+                                  const supabase = createClient()
+                                        const { data: { session } } = await supabase.auth.getSession()
+                                          
+                                              if (!session) {
+                                                      router.push('/logga-in?redirect=/konto')
+                                                              return
+                                              }
+                              
+                                  setUser({ email: session.user.email ?? '', id: session.user.id })
+                                    
+                                        // Load vouchers with deal info
+                                  const { data: voucherData } = await supabase
+                                          .from('vouchers')
+                                          .select(`
+                                                  id, code, status, used_at, created_at, expires_at,
+                                                          deal:deals(title, merchant_name, price, original_price, image_url)
+                                                                `)
+                                          .eq('user_id', session.user.id)
+                                          .order('created_at', { ascending: false })
+                                    
+                                        if (voucherData) {
+                                                setVouchers(voucherData as VoucherRow[])
+                                        }
+                              
+                                  // Load orders
+                                  const { data: orderData } = await supabase
+                                          .from('orders')
+                                          .select('id, amount, status, created_at')
+                                          .eq('user_id', session.user.id)
+                                          .order('created_at', { ascending: false })
+                                    
+                                        if (orderData) {
+                                                setOrders(orderData as OrderRow[])
+                                        }
+                              
+                                  setLoading(false)
+                            }, [router])
+                              
+                                useEffect(() => {
+                                      loadData()
+                                }, [loadData])
+                                  
+                                    async function handleLogout() {
+                                          const supabase = createClient()
+                                                await supabase.auth.signOut()
+                                                      router.push('/')
+                                    }
+  
+    if (loading) {
+          return (
+                  <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0806' }}>
+                          <div style={{ color: '#C4974A', fontSize: 16 }}>Laddar ditt konto...</div>div>
+                  </div>div>
+                )
+    }
+  
+    const activeVouchers = vouchers.filter(v => v.status === 'active' && (!v.expires_at || new Date(v.expires_at) > new Date()))
+        const usedVouchers = vouchers.filter(v => v.status === 'used')
+            const expiredVouchers = vouchers.filter(v => v.status !== 'used' && v.expires_at && new Date(v.expires_at) <= new Date())
+              
+                return (
+                      <div style={{ minHeight: '100vh', background: '#0A0806', color: '#F5F2ED', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+                        {/* Header */}
+                            <div style={{ borderBottom: '1px solid rgba(201,168,76,0.15)', padding: '32px 24px 24px', maxWidth: 700, margin: '0 auto' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                                              <div>
+                                                          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#F5F2ED', fontFamily: 'Georgia, serif' }}>
+                                                                        Mitt konto
+                                                          </h1>h1>
+                                                          <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: 14 }}>{user?.email}</p>p>
+                                              </div>div>
+                                              <button onClick={handleLogout} style={{
+                                    background: 'none',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 100,
+                                    color: '#6B7280',
+                                    cursor: 'pointer',
+                                    padding: '8px 16px',
+                                    fontSize: 13,
+                      }}>
+                                                          Logga ut
+                                              </button>button>
+                                    </div>div>
+                            
+                              {/* Stats row */}
+                                    <div style={{ display: 'flex', gap: 16, marginTop: 24, flexWrap: 'wrap' }}>
+                                              <StatCard label="Aktiva vouchers" value={activeVouchers.length} color="#10B981" />
+                                              <StatCard label="Anvanda deals" value={usedVouchers.length} color="#C4974A" />
+                                              <StatCard label="Totala kop" value={orders.length} color="#6B7280" />
+                                    </div>div>
+                            </div>div>
+                      
+                        {/* Tabs */}
+                            <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 24px' }}>
+                                    <div style={{ display: 'flex', borderBottom: '1px solid rgba(201,168,76,0.1)', marginTop: 24, gap: 0 }}>
+                                      {(['vouchers', 'orders'] as const).map(tab => (
+                                    <button
+                                                    key={tab}
+                                                    onClick={() => setActiveTab(tab)}
+                                                    style={{
+                                                                      background: 'none',
+                                                                      border: 'none',
+                                                                      borderBottom: `2px solid ${activeTab === tab ? '#C4974A' : 'transparent'}`,
+                                                                      color: activeTab === tab ? '#C4974A' : '#6B7280',
+                                                                      cursor: 'pointer',
+                                                                      fontSize: 14,
+                                                                      fontWeight: activeTab === tab ? 600 : 400,
+                                                                      padding: '12px 20px',
+                                                                      marginBottom: -1,
+                                                                      transition: 'all 0.2s',
+                                                    }}
+                                                  >
+                                      {tab === 'vouchers' ? `Mina vouchers (${vouchers.length})` : `Orderhistorik (${orders.length})`}
+                                    </button>button>
+                                  ))}
+                                    </div>div>
+                            
+                              {/* Content */}
+                                    <div style={{ paddingTop: 24, paddingBottom: 60 }}>
+                                      {activeTab === 'vouchers' && (
+                                    <>
+                                      {vouchers.length === 0 ? (
+                                                      <EmptyState
+                                                                          title="Inga vouchers annu"
+                                                                          desc="Utforska vara deals och kop din forsta voucher!"
+                                                                          cta="Utforska deals"
+                                                                          href="/deals"
+                                                                        />
+                                                    ) : (
+                                                      <>
+                                                        {activeVouchers.length > 0 && (
+                                                                            <section style={{ marginBottom: 32 }}>
+                                                                                                  <SectionLabel>Aktiva ({activeVouchers.length})</SectionLabel>SectionLabel>
+                                                                              {activeVouchers.map(v => <VoucherCard key={v.id} voucher={v} />)}
+                                                                            </section>section>
+                                                                        )}
+                                                        {usedVouchers.length > 0 && (
+                                                                            <section style={{ marginBottom: 32 }}>
+                                                                                                  <SectionLabel>Anvanda ({usedVouchers.length})</SectionLabel>SectionLabel>
+                                                                              {usedVouchers.map(v => <VoucherCard key={v.id} voucher={v} />)}
+                                                                            </section>section>
+                                                                        )}
+                                                        {expiredVouchers.length > 0 && (
+                                                                            <section>
+                                                                                                  <SectionLabel>Utgangna ({expiredVouchers.length})</SectionLabel>SectionLabel>
+                                                                              {expiredVouchers.map(v => <VoucherCard key={v.id} voucher={v} />)}
+                                                                            </section>section>
+                                                                        )}
+                                                      </>>
+                                                    )}
+                                    </>>
+                                  )}
+                                    
+                                      {activeTab === 'orders' && (
+                                    <>
+                                      {orders.length === 0 ? (
+                                                      <EmptyState
+                                                                          title="Inga kop annu"
+                                                                          desc="Du har inte gjort nagra kop an."
+                                                                          cta="Utforska deals"
+                                                                          href="/deals"
+                                                                        />
+                                                    ) : (
+                                                      <div>
+                                                        {orders.map(order => (
+                                                                            <div key={order.id} style={{
+                                                                                                    background: 'rgba(255,255,255,0.03)',
+                                                                                                    border: '1px solid rgba(255,255,255,0.08)',
+                                                                                                    borderRadius: 12,
+                                                                                                    padding: '16px 20px',
+                                                                                                    marginBottom: 12,
+                                                                                                    display: 'flex',
+                                                                                                    justifyContent: 'space-between',
+                                                                                                    alignItems: 'center',
+                                                                                                    flexWrap: 'wrap',
+                                                                                                    gap: 8,
+                                                                            }}>
+                                                                                                  <div>
+                                                                                                                          <div style={{ color: '#F5F2ED', fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
+                                                                                                                                                    Order #{order.id.slice(0, 8).toUpperCase()}
+                                                                                                                            </div>div>
+                                                                                                                          <div style={{ color: '#6B7280', fontSize: 12 }}>
+                                                                                                                            {new Date(order.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                                                                            </div>div>
+                                                                                                    </div>div>
+                                                                                                  <div style={{ textAlign: 'right' }}>
+                                                                                                                          <div style={{ color: '#C4974A', fontSize: 16, fontWeight: 700 }}>{order.amount} kr</div>div>
+                                                                                                                          <span style={badgeStyle(order.status === 'completed' ? '#10B981' : order.status === 'pending' ? '#F59E0B' : '#6B7280')}>
+                                                                                                                            {order.status === 'completed' ? 'Genomford' : order.status === 'pending' ? 'Behandlas' : order.status}
+                                                                                                                            </span>span>
+                                                                                                    </div>div>
+                                                                            </div>div>
+                                                                          ))}
+                                                      </div>div>
+                                                  )}
+                                    </>>
+                                  )}
+                                    </div>div>
+                            </div>div>
+                      </div>div>
+                    )
+}
+
+function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+    return (
+          <div style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 10,
+                  padding: '14px 20px',
+                  flex: '1 1 120px',
+                  minWidth: 100,
+          }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color }}>{value}</div>div>
+                <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{label}</div>div>
+          </div>div>
+        )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+    return (
+          <h2 style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#6B7280',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  margin: '0 0 12px',
+          }}>{children}</h2>h2>
+        )
+}
+
+function EmptyState({ title, desc, cta, href }: { title: string; desc: string; cta: string; href: string }) {
+    return (
+          <div style={{ textAlign: 'center', padding: '60px 24px' }}>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>✦</div>div>
+                <h3 style={{ color: '#F5F2ED', margin: '0 0 8px', fontSize: 18 }}>{title}</h3>h3>
+                <p style={{ color: '#6B7280', margin: '0 0 24px', fontSize: 14 }}>{desc}</p>p>
+                <Link href={href} style={{
+                    color: '#0A0806',
+                    backgroundColor: '#C4974A',
+                    borderRadius: 100,
+                    padding: '12px 28px',
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    fontWeight: 600,
+          }}>{cta}</Link>Link>
+          </div>div>
+        )
+}</></></></button>
