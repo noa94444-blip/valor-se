@@ -1,10 +1,10 @@
 'use client'
-// @ts-nocheck
 import { useState } from 'react'
+import Link from 'next/link'
 
 export default function KontaktPage() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
-  const [status, setStatus] = useState(null) // null | 'loading' | 'success' | 'error'
+  const [status, setStatus] = useState(null)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -14,121 +14,65 @@ export default function KontaktPage() {
       const res = await fetch('/api/support', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `Kontaktformulär från ${form.name} (${form.email})\nÄmne: ${form.subject}\n\n${form.message}` })
+        body: JSON.stringify({ message: 'Från: ' + form.name + ' (' + form.email + ')\nÄmne: ' + form.subject + '\n\n' + form.message }),
       })
-      if (res.ok) setStatus('success')
-      else setStatus('error')
-    } catch {
-      setStatus('error')
-    }
+      setStatus(res.ok ? 'success' : 'error')
+      if (res.ok) setForm({ name: '', email: '', subject: '', message: '' })
+    } catch { setStatus('error') }
   }
-
-  const inputStyle = {
-    width: '100%', padding: '12px 16px', borderRadius: '8px',
-    border: '1.5px solid #E2DDD6', background: '#FFFFFF',
-    fontSize: '15px', color: '#26231F', outline: 'none',
-    fontFamily: 'inherit', boxSizing: 'border-box'
-  }
-
-  const contacts = [
-    { icon: '📧', label: 'E-post support', value: 'support@valor.se', href: 'mailto:support@valor.se' },
-    { icon: '🤝', label: 'Bli partner', value: 'partner@valor.se', href: 'mailto:partner@valor.se' },
-    { icon: '⏱️', label: 'Svarstid', value: '1–2 arbetsdagar', href: null },
-  ]
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F2ED' }}>
-      {/* Header */}
-      <div style={{ background: '#26231F', padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <a href="/" style={{ color: '#F5F2ED', fontWeight: '800', fontSize: '20px', textDecoration: 'none', letterSpacing: '-0.5px' }}>VALÖR</a>
-        <nav style={{ display: 'flex', gap: '24px' }}>
-          {[['Deals', '/deals'], ['Om oss', '/om-oss'], ['Hemsida', '/']].map(([label, href]) => (
-            <a key={href} href={href} style={{ color: '#F5F2ED', textDecoration: 'none', fontSize: '14px', opacity: 0.85 }}>{label}</a>
-          ))}
-        </nav>
-      </div>
-
-      {/* Hero */}
-      <div style={{ background: '#26231F', padding: '56px 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>💬</div>
-        <h1 style={{ fontSize: '36px', fontWeight: '800', color: '#F5F2ED', marginBottom: '12px' }}>Kontakta oss</h1>
-        <p style={{ color: '#8B8680', fontSize: '16px', maxWidth: '500px', margin: '0 auto' }}>
-          Vi hjälper dig med allt — från beställningar till partnerskap. Hör av dig!
-        </p>
-      </div>
-
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px' }}>
-          {/* Contact info */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {contacts.map(({ icon, label, value, href }) => (
-              <div key={label} style={{ background: '#FFFFFF', borderRadius: '12px', padding: '20px', border: '1px solid #E2DDD6' }}>
-                <div style={{ fontSize: '24px', marginBottom: '8px' }}>{icon}</div>
-                <div style={{ fontSize: '12px', color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{label}</div>
-                {href ? (
-                  <a href={href} style={{ color: '#4A6741', fontWeight: '600', textDecoration: 'none', fontSize: '14px' }}>{value}</a>
-                ) : (
-                  <div style={{ color: '#26231F', fontWeight: '600', fontSize: '14px' }}>{value}</div>
-                )}
-              </div>
-            ))}
-
-            <div style={{ background: '#4A6741', borderRadius: '12px', padding: '20px', color: '#FFFFFF' }}>
-              <div style={{ fontSize: '22px', marginBottom: '8px' }}>🤝</div>
-              <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '6px' }}>Vill du bli partner?</div>
-              <div style={{ fontSize: '13px', opacity: 0.85, marginBottom: '12px' }}>Vi erbjuder 85% provision till alla våra handlare.</div>
-              <a href="/avtal" style={{ color: '#F5E68A', textDecoration: 'none', fontSize: '13px', fontWeight: '600' }}>Läs mer om avtal →</a>
-            </div>
-          </div>
-
-          {/* Form */}
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '32px', border: '1px solid #E2DDD6', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-            {status === 'success' ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div style={{ fontSize: '56px', marginBottom: '16px' }}>✅</div>
-                <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#26231F', marginBottom: '8px' }}>Meddelande skickat!</h2>
-                <p style={{ color: '#6B6560', marginBottom: '24px' }}>Vi svarar inom 1–2 arbetsdagar.</p>
-                <button onClick={() => { setStatus(null); setForm({ name: '', email: '', subject: '', message: '' }) }} style={{ background: '#4A6741', color: '#FFFFFF', border: 'none', padding: '12px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>Skicka nytt meddelande</button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit}>
-                <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#26231F', marginBottom: '24px' }}>Skicka meddelande</h2>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#26231F', marginBottom: '6px' }}>Namn *</label>
-                    <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ditt namn" required />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#26231F', marginBottom: '6px' }}>E-post *</label>
-                    <input style={inputStyle} type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="din@email.se" required />
-                  </div>
-                </div>
-                
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#26231F', marginBottom: '6px' }}>Ämne</label>
-                  <input style={inputStyle} value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="Vad gäller det?" />
-                </div>
-                
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#26231F', marginBottom: '6px' }}>Meddelande *</label>
-                  <textarea style={{ ...inputStyle, minHeight: '140px', resize: 'vertical' }} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder="Beskriv ditt ärende..." required />
-                </div>
-
-                {status === 'error' && (
-                  <div style={{ background: '#FEE2E2', color: '#991B1B', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>
-                    Något gick fel. Försök igen eller maila oss direkt på support@valor.se
-                  </div>
-                )}
-                
-                <button type="submit" disabled={status === 'loading'} style={{ width: '100%', background: '#4A6741', color: '#FFFFFF', border: 'none', padding: '14px', borderRadius: '10px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', opacity: status === 'loading' ? 0.7 : 1, letterSpacing: '0.2px' }}>
-                  {status === 'loading' ? 'Skickar...' : 'Skicka meddelande →'}
-                </button>
-              </form>
-            )}
-          </div>
+    <main style={{ minHeight: '100vh', backgroundColor: '#0A0806', paddingTop: '60px' }}>
+      <section style={{ background: 'linear-gradient(160deg, #0A0806 0%, #1A1410 60%, #0A0806 100%)', padding: '80px 24px 60px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '20px' }}>&#128172;</div>
+          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(28px, 5vw, 52px)', fontWeight: 900, color: '#F5F2ED', marginBottom: '16px' }}>
+            Kontakta oss
+          </h1>
+          <p style={{ color: '#8A847C', fontSize: '1.05rem', lineHeight: 1.7 }}>
+            Vi hjälper dig med allt — från beställningar till partnerskap. Hör av dig!
+          </p>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <section style={{ padding: '40px 24px 100px', maxWidth: '1000px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '40px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {[
+            { icon: '&#128231;', label: 'E-POST SUPPORT', val: 'support@valor.se', href: 'mailto:support@valor.se' },
+            { icon: '&#128188;', label: 'PARTNER?', val: 'Registrera här', href: '/registrera' },
+            { icon: '&#9200;', label: 'SVARSTID', val: 'Inom 24 timmar', href: null },
+          ].map(({ icon, label, val, href }) => (
+            <div key={label} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '8px' }} dangerouslySetInnerHTML={{ __html: icon }} />
+              <div style={{ color: '#888', fontSize: '0.75rem', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '6px' }}>{label}</div>
+              {href ? <a href={href} style={{ color: '#C9A84C', fontWeight: 700, textDecoration: 'none' }}>{val}</a>
+                : <span style={{ color: '#F5F2ED', fontWeight: 600 }}>{val}</span>}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '20px', padding: '32px' }}>
+          <h2 style={{ fontFamily: 'Georgia, serif', color: '#F5F2ED', fontSize: '1.4rem', marginBottom: '24px' }}>Skicka meddelande</h2>
+          {status === 'success' ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <p style={{ color: '#4caf50', fontWeight: 700, fontSize: '1.1rem' }}>&#10003; Tack! Vi hör av oss snart.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <input placeholder="Ditt namn" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #333', background: '#111', color: '#fff', fontSize: '0.95rem' }} />
+                <input type="email" placeholder="din@email.se" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #333', background: '#111', color: '#fff', fontSize: '0.95rem' }} />
+              </div>
+              <input placeholder="Ämne" value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #333', background: '#111', color: '#fff', fontSize: '0.95rem' }} />
+              <textarea placeholder="Ditt meddelande..." value={form.message} onChange={e => setForm({...form, message: e.target.value})} required rows={5} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #333', background: '#111', color: '#fff', fontSize: '0.95rem', resize: 'vertical' }} />
+              {status === 'error' && <p style={{ color: '#f44336', fontSize: '0.85rem', margin: 0 }}>Något gick fel. Försök igen.</p>}
+              <button type="submit" disabled={status === 'loading'} style={{ padding: '14px', borderRadius: '8px', border: 'none', background: '#C9A84C', color: '#000', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>
+                {status === 'loading' ? 'Skickar...' : 'Skicka meddelande'}
+              </button>
+            </form>
+          )}
+        </div>
+      </section>
+    </main>
   )
 }
