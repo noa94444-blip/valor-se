@@ -1,10 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
+
+function getTimeLeft(expiresAt) {
+  if (!expiresAt) return null
+  const diff = new Date(expiresAt) - new Date()
+  if (diff <= 0) return 'Utgången'
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  if (days > 0) return days + ' dagar kvar'
+  if (hours > 0) return hours + ' timmar kvar'
+  return 'Sista dagen!'
+}
 
 export default function KontoPage() {
   const [user, setUser] = useState(null)
@@ -15,67 +26,52 @@ export default function KontoPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const supabase = createClient()
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
     async function loadData() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/logga-in')
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/logga-in?redirect=/konto')
         return
       }
-      setUser(session.user)
-      const { data: voucherData } = await supabase
+      setUser(user)
+
+      const { data: vouchersData } = await supabase
         .from('vouchers')
-        .select('*, deal:deals(title, merchant_name, price, original_price, image_url, expires_at)')
-        .eq('user_id', session.user.id)
+        .select('*, deals(title, merchant_name, original_price, discounted_price)')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-      setVouchers(voucherData || [])
-      const { data: orderData } = await supabase
+
+      const { data: ordersData } = await supabase
         .from('orders')
-        .select('*, deal:deals(title, merchant_name, price)')
-        .eq('user_id', session.user.id)
+        .select('*, deals(title, merchant_name)')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-      setOrders(orderData || [])
+
+      setVouchers(vouchersData || [])
+      setOrders(ordersData || [])
       setLoading(false)
     }
+
     loadData()
   }, [])
 
   const handleLogout = async () => {
-    const supabase = createClient()
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
     await supabase.auth.signOut()
     router.push('/')
   }
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return 'Okant datum'
-    return new Date(dateStr).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' })
-  }
-
-  const getDaysLeft = (expiresAt) => {
-    if (!expiresAt) return null
-    const diff = new Date(expiresAt).getTime() - Date.now()
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-    if (days < 0) return 'Utgangen'
-    if (days === 0) return 'Sista dagen!'
-    if (days === 1) return '1 dag kvar'
-    if (days <= 7) return days + ' dagar kvar'
-    return null
-  }
-
-  const getUrgencyColor = (expiresAt) => {
-    if (!expiresAt) return '#10B981'
-    const diff = new Date(expiresAt).getTime() - Date.now()
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-    if (days < 0) return '#6b7280'
-    if (days <= 3) return '#EF4444'
-    if (days <= 7) return '#F59E0B'
-    return '#10B981'
-  }
-
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: '#C4974A', fontSize: 18 }}>Laddar ditt konto...</div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0806' }}>
+        <p style={{ color: '#c9a227', fontSize: '1.1rem' }}>Laddar ditt konto...</p>
       </div>
     )
   }
@@ -84,128 +80,175 @@ export default function KontoPage() {
   const usedVouchers = vouchers.filter(v => v.status === 'used')
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#e5e5e5' }}>
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
-          <div>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#C4974A', margin: 0 }}>Mitt konto</h1>
-            <p style={{ color: '#9ca3af', marginTop: 4, marginBottom: 0 }}>{user?.email}</p>
-          </div>
-          <button onClick={handleLogout} style={{ background: 'transparent', border: '1px solid rgba(196,151,74,0.4)', color: '#C4974A', padding: '8px 20px', borderRadius: 4, cursor: 'pointer', fontSize: 14 }}>
-            Logga ut
-          </button>
+    <div style={{ minHeight: '100vh', background: '#0A0806', padding: '32px 24px', maxWidth: '860px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
+        <div>
+          <h1 style={{ color: '#c9a227', fontFamily: 'Georgia, serif', fontSize: '2rem', margin: 0 }}>Mitt konto</h1>
+          <p style={{ color: '#888', margin: '4px 0 0', fontSize: '0.9rem' }}>{user?.email}</p>
         </div>
-
-        <div style={{ display: 'flex', gap: 4, marginBottom: 32, background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 4 }}>
-          {['vouchers', 'orders'].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{ flex: 1, padding: '10px 20px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, background: activeTab === tab ? '#C4974A' : 'transparent', color: activeTab === tab ? '#0a0a0a' : '#9ca3af', transition: 'all 0.2s' }}
-            >
-              {tab === 'vouchers' ? 'Mina vouchers (' + vouchers.length + ')' : 'Orderhistorik (' + orders.length + ')'}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === 'vouchers' && (
-          <div>
-            {vouchers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🎫</div>
-                <h3 style={{ color: '#C4974A', marginBottom: 8 }}>Inga vouchers an</h3>
-                <p style={{ color: '#6b7280', marginBottom: 24 }}>Utforska vara deals och kop din forsta voucher!</p>
-                <Link href="/deals" style={{ background: '#C4974A', color: '#0a0a0a', padding: '12px 28px', borderRadius: 4, textDecoration: 'none', fontWeight: 600 }}>
-                  Se alla deals
-                </Link>
-              </div>
-            ) : (
-              <div>
-                {activeVouchers.length > 0 && (
-                  <div style={{ marginBottom: 32 }}>
-                    <h2 style={{ fontSize: 18, fontWeight: 600, color: '#e5e5e5', marginBottom: 16 }}>Aktiva vouchers ({activeVouchers.length})</h2>
-                    <div style={{ display: 'grid', gap: 16 }}>
-                      {activeVouchers.map(v => {
-                        const daysLeft = getDaysLeft(v.deal?.expires_at)
-                        const urgencyColor = getUrgencyColor(v.deal?.expires_at)
-                        return (
-                          <div key={v.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(196,151,74,0.2)', borderRadius: 12, padding: 24, display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-                            <div style={{ flexShrink: 0 }}>
-                              <QRCodeSVG value={'VALOR-' + v.code} size={120} bgColor="#0a0a0a" fgColor="#C4974A" />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                                <h3 style={{ fontSize: 17, fontWeight: 600, color: '#e5e5e5', margin: 0 }}>{v.deal?.title || 'Deal'}</h3>
-                                <span style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>AKTIV</span>
-                              </div>
-                              <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 12 }}>{v.deal?.merchant_name}</p>
-                              <div style={{ fontFamily: 'monospace', fontSize: 18, color: '#C4974A', fontWeight: 700, marginBottom: 12, letterSpacing: '0.1em' }}>
-                                {v.code}
-                              </div>
-                              <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#6b7280' }}>
-                                <span>Kopt: {formatDate(v.created_at)}</span>
-                                {v.deal?.expires_at && <span>Utgar: {formatDate(v.deal.expires_at)}</span>}
-                              </div>
-                              {daysLeft && (
-                                <div style={{ marginTop: 12, display: 'inline-block', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + urgencyColor, borderRadius: 20, padding: '4px 12px', fontSize: 12, color: urgencyColor, fontWeight: 600 }}>
-                                  {daysLeft}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-                {usedVouchers.length > 0 && (
-                  <div>
-                    <h2 style={{ fontSize: 18, fontWeight: 600, color: '#6b7280', marginBottom: 16 }}>Anvanda vouchers ({usedVouchers.length})</h2>
-                    <div style={{ display: 'grid', gap: 12 }}>
-                      {usedVouchers.map(v => (
-                        <div key={v.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.6 }}>
-                          <div>
-                            <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>{v.deal?.title || 'Deal'}</div>
-                            <div style={{ fontSize: 12, color: '#6b7280' }}>{v.deal?.merchant_name} - Anvand: {formatDate(v.used_at)}</div>
-                          </div>
-                          <span style={{ background: 'rgba(107,114,128,0.2)', color: '#6b7280', padding: '4px 12px', borderRadius: 20, fontSize: 12 }}>ANVAND</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'orders' && (
-          <div>
-            {orders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
-                <h3 style={{ color: '#C4974A', marginBottom: 8 }}>Ingen orderhistorik</h3>
-                <p style={{ color: '#6b7280' }}>Dina kop kommer att visas har.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gap: 12 }}>
-                {orders.map(order => (
-                  <div key={order.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(196,151,74,0.1)', borderRadius: 12, padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>{order.deal?.title || 'Order'}</div>
-                      <div style={{ fontSize: 13, color: '#6b7280' }}>{order.deal?.merchant_name} - {formatDate(order.created_at)}</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: '#C4974A' }}>{order.amount_paid || order.deal?.price} kr</div>
-                      <div style={{ fontSize: 12, color: '#10B981', marginTop: 4 }}>{order.status || 'Genomford'}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        <button
+          onClick={handleLogout}
+          style={{ padding: '8px 20px', border: '1px solid #555', borderRadius: 8, background: 'transparent', color: '#aaa', cursor: 'pointer', fontSize: '0.9rem' }}
+        >
+          Logga ut
+        </button>
       </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 32, borderRadius: 10, overflow: 'hidden', border: '1px solid #222' }}>
+        <button
+          onClick={() => setActiveTab('vouchers')}
+          style={{
+            flex: 1, padding: '14px', border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600,
+            background: activeTab === 'vouchers' ? '#c9a227' : '#111',
+            color: activeTab === 'vouchers' ? '#000' : '#aaa',
+          }}
+        >
+          Mina vouchers ({vouchers.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('orders')}
+          style={{
+            flex: 1, padding: '14px', border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600,
+            background: activeTab === 'orders' ? '#c9a227' : '#111',
+            color: activeTab === 'orders' ? '#000' : '#aaa',
+          }}
+        >
+          Orderhistorik ({orders.length})
+        </button>
+      </div>
+
+      {/* Vouchers tab */}
+      {activeTab === 'vouchers' && (
+        <div>
+          {vouchers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <div style={{ fontSize: '3rem', marginBottom: 16 }}>🎟️</div>
+              <h3 style={{ color: '#c9a227', marginBottom: 8, fontFamily: 'Georgia, serif' }}>Inga vouchers än</h3>
+              <p style={{ color: '#6b7280', marginBottom: 24 }}>Utforska våra deals och köp din första voucher!</p>
+              <Link href="/deals" style={{
+                display: 'inline-block', padding: '12px 28px',
+                background: '#c9a227', color: '#000', borderRadius: 8,
+                textDecoration: 'none', fontWeight: 'bold',
+              }}>
+                Se alla deals
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {vouchers.map(voucher => {
+                const timeLeft = getTimeLeft(voucher.expires_at)
+                const isExpired = timeLeft === 'Utgången'
+                const isUrgent = timeLeft && timeLeft.includes('timmar')
+                return (
+                  <div key={voucher.id} style={{
+                    background: '#111', borderRadius: 12,
+                    border: isExpired ? '1px solid #333' : '1px solid rgba(201,162,39,0.3)',
+                    padding: 24, display: 'flex', gap: 24, flexWrap: 'wrap',
+                    opacity: isExpired ? 0.6 : 1,
+                  }}>
+                    {/* QR Code */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <div style={{ background: '#fff', padding: 12, borderRadius: 8 }}>
+                        <QRCodeSVG value={voucher.qr_code || voucher.id} size={120} />
+                      </div>
+                      <span style={{ color: '#888', fontSize: '0.75rem' }}>
+                        {voucher.status === 'used' ? '✓ Använd' : 'Visa vid besök'}
+                      </span>
+                    </div>
+                    {/* Details */}
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      <h3 style={{ color: '#fff', marginBottom: 4, fontFamily: 'Georgia, serif' }}>
+                        {voucher.deals?.title || 'Deal'}
+                      </h3>
+                      <p style={{ color: '#888', fontSize: '0.9rem', margin: '0 0 12px' }}>
+                        {voucher.deals?.merchant_name}
+                      </p>
+
+                      {timeLeft && (
+                        <div style={{
+                          display: 'inline-block', padding: '4px 12px', borderRadius: 20,
+                          background: isExpired ? '#1a1a1a' : isUrgent ? '#3a1a00' : '#1a2a00',
+                          color: isExpired ? '#555' : isUrgent ? '#ff6b00' : '#c9a227',
+                          fontSize: '0.85rem', fontWeight: 600, marginBottom: 12,
+                        }}>
+                          {isUrgent ? '⚠️ ' : '⏰ '}{timeLeft}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {voucher.created_at && (
+                          <p style={{ color: '#666', fontSize: '0.8rem', margin: 0 }}>
+                            Köpt: {new Date(voucher.created_at).toLocaleDateString('sv-SE')}
+                          </p>
+                        )}
+                        {voucher.expires_at && (
+                          <p style={{ color: '#666', fontSize: '0.8rem', margin: 0 }}>
+                            Gäller till: {new Date(voucher.expires_at).toLocaleDateString('sv-SE')}
+                          </p>
+                        )}
+                        <p style={{ color: '#c9a227', fontSize: '0.85rem', fontWeight: 600, margin: '4px 0 0' }}>
+                          {voucher.deals?.discounted_price ? voucher.deals.discounted_price + ' kr' : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Orders tab */}
+      {activeTab === 'orders' && (
+        <div>
+          {orders.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <div style={{ fontSize: '3rem', marginBottom: 16 }}>📋</div>
+              <h3 style={{ color: '#c9a227', marginBottom: 8, fontFamily: 'Georgia, serif' }}>Inga orders än</h3>
+              <p style={{ color: '#6b7280', marginBottom: 24 }}>Dina köp kommer att visas här.</p>
+              <Link href="/deals" style={{
+                display: 'inline-block', padding: '12px 28px',
+                background: '#c9a227', color: '#000', borderRadius: 8,
+                textDecoration: 'none', fontWeight: 'bold',
+              }}>
+                Utforska deals
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {orders.map(order => (
+                <div key={order.id} style={{
+                  background: '#111', borderRadius: 10,
+                  border: '1px solid #222', padding: '16px 20px',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
+                }}>
+                  <div>
+                    <p style={{ color: '#fff', margin: 0, fontWeight: 600 }}>{order.deals?.title || 'Deal'}</p>
+                    <p style={{ color: '#888', margin: '4px 0 0', fontSize: '0.85rem' }}>{order.deals?.merchant_name}</p>
+                    <p style={{ color: '#666', margin: '4px 0 0', fontSize: '0.8rem' }}>
+                      {new Date(order.created_at).toLocaleDateString('sv-SE')}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ color: '#c9a227', fontWeight: 'bold', margin: 0 }}>{order.amount} kr</p>
+                    <span style={{
+                      display: 'inline-block', marginTop: 4, padding: '2px 10px',
+                      borderRadius: 20, fontSize: '0.8rem',
+                      background: order.status === 'paid' ? '#1a3a1a' : '#1a1a2a',
+                      color: order.status === 'paid' ? '#4caf50' : '#888',
+                    }}>
+                      {order.status === 'paid' ? '✓ Betald' : order.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
