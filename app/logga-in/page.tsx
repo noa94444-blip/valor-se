@@ -36,7 +36,20 @@ export default function LoggaIn() {
           password,
         })
         if (loginError) throw loginError
-        router.push(redirectTo)
+        // Kolla roll och redirecta admin till /admin
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', (await supabase.auth.getUser()).data.user?.id || '')
+          .single()
+        const role = profileData?.role ?? 'customer'
+        if (role === 'admin') {
+          router.push('/admin')
+        } else if (role === 'merchant') {
+          router.push('/merchant')
+        } else {
+          router.push(redirectTo)
+        }
       } else {
         const { error: registerError } = await supabase.auth.signUp({
           email,
