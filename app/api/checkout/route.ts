@@ -68,7 +68,7 @@ export async function POST(request) {
 
     const { data: deal, error: dealError } = await adminSupabase
       .from('deals')
-      .select('id, title, deal_price, status, max_qty, sold_count, valid_until, slug, description, image_url')
+      .select('id, title, deal_price, status, max_qty, sold_count, valid_until, slug, description')
       .eq('id', dealId)
       .eq('status', 'active')
       .single()
