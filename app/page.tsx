@@ -336,6 +336,26 @@ export default async function HomePage() {
         </div>
       </section>
 
+        {/* — NEWSLETTER — */}
+        <NewsletterSignup />
+
+        {/* — STICKY MOBILE CTA — */}
+        <style>{`
+          @media (max-width: 768px) {
+            .valor-sticky-cta {
+              display: flex !important;
+            }
+          }
+        `}</style>
+        <div className="valor-sticky-cta" style={{ display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(10,10,10,0.98)', borderTop: '1px solid rgba(196,151,74,0.3)', padding: '12px 16px', gap: 8, zIndex: 999, backdropFilter: 'blur(12px)' }}>
+          <a href="/deals" style={{ flex: 1, background: 'linear-gradient(135deg, #C9A84C 0%, #9A7A1A 100%)', color: '#0A0806', textDecoration: 'none', fontSize: 14, fontWeight: 700, borderRadius: 8, padding: '12px', textAlign: 'center' }}>
+            Se alla deals
+          </a>
+          <a href="/logga-in" style={{ flex: 1, background: 'transparent', color: '#C4974A', textDecoration: 'none', fontSize: 14, fontWeight: 600, borderRadius: 8, padding: '12px', textAlign: 'center', border: '1px solid rgba(196,151,74,0.4)' }}>
+            Mitt konto
+          </a>
+        </div>
+
     </div>
   )
 }
